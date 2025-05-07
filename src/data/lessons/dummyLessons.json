@@ -1,0 +1,73 @@
+{
+    "id": "lesson-001",
+    "title": "Taşların Tanıtımı: Piyon",
+    "description": "Bu derste piyonların nasıl hareket ettiğini öğreneceğiz.",
+    "initialFen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+    "metadata": {
+      "rootId": "root",
+      "mainLineNodeIds": ["root", "node_e2e4", "node_e7e5", "node_g1f3"],
+      "currentNodeId": "root"
+    },
+    "nodes": {
+      "root": {
+        "id": "root",
+        "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+        "parentId": null,
+        "childrenIds": ["node_e2e4"],
+        "depth": 0,
+        "move": null,
+        "metadata": {
+          "isMainLine": true,
+          "comment": "Başlangıç pozisyonu. Piyonlar satranç tahtasının ikinci sırasında dizilidir."
+        }
+      },
+      "node_e2e4": {
+        "id": "node_e2e4",
+        "fen": "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1",
+        "parentId": "root",
+        "childrenIds": ["node_e7e5"],
+        "depth": 1,
+        "move": {
+          "from": "e2",
+          "to": "e4",
+          "san": "e4"
+        },
+        "metadata": {
+          "isMainLine": true,
+          "comment": "Piyonlar sadece ileri doğru hareket edebilir. Başlangıçta iki kare ileri gidebilirler."
+        }
+      },
+      "node_e7e5": {
+        "id": "node_e7e5",
+        "fen": "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2",
+        "parentId": "node_e2e4",
+        "childrenIds": ["node_g1f3"],
+        "depth": 2,
+        "move": {
+          "from": "e7",
+          "to": "e5",
+          "san": "e5"
+        },
+        "metadata": {
+          "isMainLine": true,
+          "comment": "Siyah da piyonunu iki kare ileriye sürdü."
+        }
+      },
+      "node_g1f3": {
+        "id": "node_g1f3",
+        "fen": "rnbqkbnr/pppp1ppp/8/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2",
+        "parentId": "node_e7e5",
+        "childrenIds": [],
+        "depth": 3,
+        "move": {
+          "from": "g1",
+          "to": "f3",
+          "san": "Nf3"
+        },
+        "metadata": {
+          "isMainLine": true,
+          "comment": "Beyaz, atını geliştiriyor ve e5 karesini kontrol ediyor."
+        }
+      }
+    }
+  }
