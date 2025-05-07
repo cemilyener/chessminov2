@@ -2,6 +2,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import LessonPage from './components/lessons/LessonPage';
+import TestPage from './components/TestPage';
 
 // Ana Sayfa bileşeni (geçici olarak burada tanımlandı)
 const HomePage = () => {
@@ -66,6 +67,7 @@ function App() {
           <div className="space-x-4">
             <Link to="/" className="hover:text-blue-300">Ana Sayfa</Link>
             <Link to="/about" className="hover:text-blue-300">Hakkında</Link>
+            <Link to="/test-pgn" className="hover:text-blue-300">PGN Test</Link>
           </div>
         </div>
       </nav>
@@ -76,6 +78,7 @@ function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/lesson/:lessonId" element={<LessonPage />} />
+          <Route path="/test-pgn" element={<TestPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </main>

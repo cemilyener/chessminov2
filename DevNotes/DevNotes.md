@@ -20,40 +20,61 @@
 - Daha fazla hamle ve varyant içeren ders içeriği.
 - Test ve hata yakalama mekanizmalarını güçlendirme.
 
-
-
 [Tarih: 6 Mayıs 2025] - Ders İlerlemesi ve PGN İşleme Oturumu
-Ana Konular:
 
-Ders Sayfası bileşeni geliştirme ve implementasyonu.
-Ders verisi yükleme mekanizması oluşturma.
-Ders ilerlemesini localStorage ile kaydetme ve geri yükleme.
-İlerleme göstergesi ve son ziyaret edilen dersler özelliklerinin eklenmesi.
-React Router kurulumu ve entegrasyonu.
-PGN işleme modülü için temel kod iskeleti (pgnUtils.js).
+**Ana Konular:**
+- Ders Sayfası bileşeni geliştirme ve implementasyonu.
+- Ders verisi yükleme mekanizması oluşturma.
+- Ders ilerlemesini localStorage ile kaydetme ve geri yükleme.
+- İlerleme göstergesi ve son ziyaret edilen dersler özelliklerinin eklenmesi.
+- React Router kurulumu ve entegrasyonu.
+- PGN işleme modülü için temel kod iskeleti (pgnUtils.js).
 
-Kritik Kararlar:
+**Kritik Kararlar:**
+- URL parametreleri (route params) ile ders sayfası implementasyonu.
+- Düğüm tabanlı Map yapısıyla JSON verisini işleme.
+- localStorage'da veri saklama formatı (ilerleme, son ziyaretler).
+- İlerleme yüzdesi hesaplama mantığı (mainLineNodeIds kullanarak).
+- Mobil ve tablet uyumlu layout tasarımı.
 
-URL parametreleri (route params) ile ders sayfası implementasyonu.
-Düğüm tabanlı Map yapısıyla JSON verisini işleme.
-localStorage'da veri saklama formatı (ilerleme, son ziyaretler).
-İlerleme yüzdesi hesaplama mantığı (mainLineNodeIds kullanarak).
-Mobil ve tablet uyumlu layout tasarımı.
+**Çözülen Sorunlar:**
+- Chess.js FEN doğrulama hatalarını yönetme (validateRules parametresi).
+- JSON verilerinden Map yapısına dönüşüm.
+- İlerleme kaydetme/yükleme sırasında hata yönetimi.
+- URL parametrelerinden veri yükleme ve güncel tutma.
+- Ders tamamlanma durumunu tespit etme.
 
-Çözülen Sorunlar:
+**Sonraki Görevler:**
+- BoardEditor bileşeni geliştirme:
+- PGN içe aktarma modülü oluşturma.
+- Varyant editörü ekleme.
+- Puzzle metadatası düzenleme arayüzü.
 
-Chess.js FEN doğrulama hatalarını yönetme (validateRules parametresi).
-JSON verilerinden Map yapısına dönüşüm.
-İlerleme kaydetme/yükleme sırasında hata yönetimi.
-URL parametrelerinden veri yükleme ve güncel tutma.
-Ders tamamlanma durumunu tespit etme.
+[Tarih: 7 Mayıs 2025] - PGN İçe Aktarma Modülü Geliştirme
 
-Sonraki Görevler:
+**Ana Konular:**
+- `pgnUtils.js` modülü geliştirildi - PGN dosyalarını ChessMino formatına dönüştürüyor
+- Map tabanlı düğüm ağacı yapısını kullanarak varyantları doğru işleme
+- Akıllı isimlendirme sistemine göre ID, başlık ve açıklama oluşturma
+- Taş türü, egzersiz tipi ve zorluk tespiti otomatikleştirildi
 
-BoardEditor bileşeni geliştirme:
-PGN içe aktarma modülü oluşturma.
-Varyant editörü ekleme.
-Puzzle metadatası düzenleme arayüzü.
+**Kritik Kararlar:**
+- Varyant ayrıştırma için parantez derinliği takibi
+- Tüm düğümleri Map yapısında saklama ve JSON dönüşümü
+- Akıllı isimlendirme sistemine uygun ID üretimi
+- Chess.js FEN hatalarına karşı koruma
+
+**Çözülen Sorunlar:**
+- Varyantların düzgün işlenmesi
+- Chess.js FEN doğrulama sorunları
+- Çoklu oyun içeren PGN dosyalarını işleme
+- Taş ve egzersiz türlerini otomatik tespit etme
+
+**Sonraki Görevler:**
+- Board Editor bileşeninde PGN içe aktarma arayüzü
+- Farklı zorluk seviyelerinde test PGN'leri oluşturma
+- PGN içeriğinden özel yönerge ve açıklamalar çıkarma
+- Ek özellikler: Çoklu dil desteği, PGN yorumlarını işleme
 
 
 
