@@ -78,3 +78,26 @@
 
 
 
+[Tarih: 7 Mayıs 2025] [saat 08:07] - PGN İçe Aktarma Modülü Geliştirme
+
+**Ana Konular:**
+- `pgnUtils.js` modülü geliştirildi - PGN dosyalarını ChessMino formatına dönüştürüyor
+- Map tabanlı düğüm ağacı yapısını kullanarak varyantları doğru işleme
+- Akıllı isimlendirme sistemine göre ID, başlık ve açıklama oluşturma
+- Taş türü, egzersiz tipi ve zorluk tespiti otomatikleştirildi
+
+**Kritik Kararlar:**
+- Varyant ayrıştırma için parantez derinliği takibi
+- Tüm düğümleri Map yapısında saklama ve JSON dönüşümü
+- Akıllı isimlendirme sistemine uygun ID üretimi
+- Chess.js FEN hatalarına karşı koruma
+
+**Çözülen Sorunlar:**
+- Varyantların düzgün işlenmesi
+- Chess.js FEN doğrulama sorunları
+- Çoklu oyun içeren PGN dosyalarını işleme
+- Taş ve egzersiz türlerini otomatik tespit etme
+
+**Sonraki Görevler:**
+- **PGN modülünün ürettiği JSON çıktı formatını (`treeToExportFormat`), `1.ChessMino-Veri-Yapisi-Sorunlari.md` dokümanında önerilen düğüm tabanlı (parentNode/startIndex içeren) formatla hizalama.**
+- Board Editor bileşeninde PGN içe aktarma arayüzü

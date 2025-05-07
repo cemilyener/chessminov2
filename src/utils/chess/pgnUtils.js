@@ -86,7 +86,13 @@ export function extractPgnMoves(pgnGame) {
         chess.load(headers.FEN);
       } catch (e) {
         console.warn("FEN yükleme hatası, varsayılan başlangıç pozisyonu kullanılıyor:", e);
-        chess.reset();
+        try {
+          // FEN doğrulama olmadan yüklemeyi dene (Chess.js 1.2+ ile)
+          chess.load(headers.FEN, { validate: false });
+        } catch (e2) {
+          console.error("FEN yükleme hatası (validate: false ile bile):", e2);
+          chess.reset(); // Varsayılan başlangıç pozisyonuna geri dön
+        }
       }
     }
     
@@ -108,6 +114,11 @@ export function extractPgnMoves(pgnGame) {
  * @param {Object} moveData - Hamle verilerini saklayacak nesne
  */
 function parseMovesAndVariants(movesText, chess, moveData) {
+  // moveData kontrolü ekleyelim
+  if (!moveData || !moveData.mainLine) {
+    console.error("Geçersiz moveData yapısı");
+    return;
+  }
   try {
     // Parantez derinliğini takip etmek için
     let depth = 0;
@@ -134,10 +145,13 @@ function parseMovesAndVariants(movesText, chess, moveData) {
           const parentIndex = moveData.mainLine.length - 1; // Ana hat üzerindeki son hamleden sonra
           
           try {
-            // Varyant başlangıç FEN'ini al
-            let variantStartFen = chess.fen();
+            // Varyantın başladığı ana hattaki hamlenin FEN'ini kullan
+            let variantStartFen;
             if (parentIndex >= 0 && moveData.mainLine[parentIndex]) {
               variantStartFen = moveData.mainLine[parentIndex].fen;
+            } else {
+              // Ana hattın ilk hamlesinden önce başlıyorsa, başlangıç FEN'ini kullan
+              variantStartFen = chess.fen();
             }
             
             // Varyant hamlelerini işle
@@ -178,23 +192,6 @@ function parseMovesAndVariants(movesText, chess, moveData) {
 }
 
 /**
- * Türkçe satranç notasyonunu standart SAN notasyonuna çevirir
- * @param {string} move - Türkçe notasyondaki hamle
- * @returns {string} - Standart SAN notasyonundaki hamle
- */
-function convertTurkishNotationToSAN(move) {
-  if (!move) return move;
-  
-  // Türkçe notasyonu standart SAN notasyonuna çevir
-  return move
-    .replace(/^F/, 'B')  // Fil -> Bishop
-    .replace(/^K/, 'R')  // Kale -> Rook
-    .replace(/^V/, 'Q')  // Vezir -> Queen
-    .replace(/^Ş/, 'K')  // Şah -> King
-    .replace(/^A/, 'N'); // At -> kNight
-}
-
-/**
  * Bir hamle dizisini ayrıştırır ve hataları tolere eder
  * @param {string} movesText - Hamle metni
  * @param {string} startFen - Başlangıç FEN'i
@@ -202,7 +199,15 @@ function convertTurkishNotationToSAN(move) {
  */
 function parseMoveSequence(movesText, startFen) {
   try {
-    const chess = new Chess(startFen);
+    let fen = startFen;
+    // Eğer FEN'de sıra beyazsa ve hamleler "1..." ile başlıyorsa, FEN'i siyaha çevir
+    const startsWithBlack = /^\d+\.\.\./.test(movesText.trim());
+    if (startsWithBlack && fen && fen.split(' ')[1] === 'w') {
+      const fenParts = fen.split(' ');
+      fenParts[1] = 'b';
+      fen = fenParts.join(' ');
+    }
+    const chess = new Chess(fen);
     const moveList = [];
     
     // Boşluklara göre ayır ve sıra numaralarını kaldır
@@ -216,13 +221,13 @@ function parseMoveSequence(movesText, startFen) {
     // Her hamleyi uygula ve kaydet
     for (let i = 0; i < moves.length; i++) {
       const originalSan = moves[i];
-      const san = convertTurkishNotationToSAN(originalSan); // Türkçe notasyonu çevir
+      const san = originalSan; // Artık doğrudan SAN kullanılıyor
       
       try {
         const move = chess.move(san);
         if (move) {
           moveList.push({
-            move: originalSan, // Orijinal hamleyi saklayalım
+            move: originalSan,
             from: move.from,
             to: move.to,
             promotion: move.promotion,
@@ -231,25 +236,58 @@ function parseMoveSequence(movesText, startFen) {
           });
         }
       } catch (e) {
-        console.warn(`"${originalSan}" hamlesi uygulanamadı: ${e.message}`);
-        
-        // Hataya rağmen devam et ve hatalı hamleyi atla
-        // Eğer hamle işlenemediyse ama devam etmemiz gerekiyorsa, 
-        // mevcut pozisyonda olduğu gibi kalıyoruz ve bir sonraki hamleye geçiyoruz
-        
-        // Eğer bu ilk hamleyse, bu varyant için büyük bir sorun, uyarı oluşturalım
-        if (i === 0) {
+        console.warn(`"${originalSan}" hamlesi uygulanamadı (çevrilen: "${san}"): ${e.message}, FEN: ${chess.fen()}`);
+        // Özel düzeltmeler
+        let success = false;
+        // Kd2 gibi hamleler için özel düzeltme (muhtemelen Şah hamlesidir)
+        if (!success && originalSan.match(/^[Kk]d[1-8]$/)) {
+          try {
+            // K harfini ekle (Şah hamlesi olarak dene)
+            const kingMove = chess.move('K' + originalSan.substring(1));
+            if (kingMove) {
+              success = true;
+              moveList.push({
+                move: originalSan,
+                from: kingMove.from,
+                to: kingMove.to,
+                promotion: kingMove.promotion,
+                fen: chess.fen(),
+                isLast: i === moves.length - 1
+              });
+            }
+          } catch (kingErr) {}
+        }
+        // Hala başarısızsa, en yakın legal hamleyi bulmaya çalış
+        if (!success) {
+          const legalMoves = chess.moves({ verbose: true });
+          const targetSquare = originalSan.match(/[a-h][1-8]/)?.[0];
+          if (targetSquare) {
+            const possibleMove = legalMoves.find(m => m.to === targetSquare);
+            if (possibleMove) {
+              success = true;
+              chess.move(possibleMove);
+              moveList.push({
+                move: originalSan,
+                from: possibleMove.from,
+                to: possibleMove.to,
+                promotion: possibleMove.promotion,
+                fen: chess.fen(),
+                isLast: i === moves.length - 1,
+                wasFixed: true
+              });
+            }
+          }
+        }
+        // Eğer ilk hamleyse ve hala başarısız olduysa
+        if (i === 0 && !success) {
           console.error("Varyantın ilk hamlesi uygulanamadı, muhtemelen başlangıç FEN'i yanlış.");
-          
-          // Yine de bir hamle ekleyelim ki varyant boş kalmasın
-          // Not: Bu hamle gerçekte yapılamadı, sadece veri yapısında tutarlılık için
           moveList.push({
             move: originalSan,
-            from: "error", // Hatayı belirtmek için
-            to: "error",   // Hatayı belirtmek için
-            fen: chess.fen(), // Mevcut FEN
+            from: "error",
+            to: "error",
+            fen: chess.fen(),
             isLast: i === moves.length - 1,
-            hasError: true  // Özel bir hata bayrağı
+            hasError: true
           });
         }
       }
