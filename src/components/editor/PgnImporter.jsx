@@ -1,158 +1,175 @@
-// src/components/editor/PgnImporter.jsx
-import { useState, useRef } from 'react';
-import { convertPgnToChessMinoFormat } from '../../utils/chess/pgnUtils';
+import React, { useState, useRef } from 'react';
 
-/**
- * PGN dosyalarını içe aktarma bileşeni
- */
-export default function PgnImporter() {
-  const [result, setResult] = useState(null);
-  const [loading, setLoading] = useState(false);
+const PgnImporter = ({ onImport }) => {
+  const [pgnText, setPgnText] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [message, setMessage] = useState(null);
   const fileInputRef = useRef(null);
-
-  // PGN dosyasını işle
-  const handleFileUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    setLoading(true);
+  
+  // Metin kutusundan import işlemi
+  const handleImport = () => {
+    if (!pgnText.trim()) {
+      setError('Lütfen PGN metnini girin');
+      return;
+    }
+    
+    setIsLoading(true);
     setError(null);
+    setMessage(null);
     
     try {
-      // Dosyayı oku
-      const fileContent = await readFileAsText(file);
+      // Callback fonksiyon ile parent bileşene PGN metnini ilet
+      onImport(pgnText);
+      setMessage('PGN başarıyla içe aktarıldı');
       
-      // PGN'i dönüştür
-      const puzzleSet = convertPgnToChessMinoFormat(fileContent, {
-        id: '', // Otomatik oluşturulsun
-        fileName: file.name
-      });
-      
-      setResult(puzzleSet);
+      // Başarılı içe aktarmadan sonra temizle
+      setPgnText(''); 
+      setIsLoading(false);
     } catch (err) {
-      console.error("PGN işleme hatası:", err);
-      setError(err.message || "PGN dosyası işlenirken bir hata oluştu");
-    } finally {
-      setLoading(false);
+      setError(`PGN içe aktarma hatası: ${err.message}`);
+      setIsLoading(false);
     }
   };
-
-  // Dosyayı metin olarak oku
-  const readFileAsText = (file) => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (event) => resolve(event.target.result);
-      reader.onerror = (error) => reject(error);
-      reader.readAsText(file);
-    });
-  };
-
-  // Sonucu kopyala
-  const copyToClipboard = () => {
-    if (!result) return;
+  
+  // fc3.pgn dosyasından örnek yükleme
+  const loadSamplePgn = async () => {
+    setIsLoading(true);
+    setError(null);
+    setMessage(null);
     
-    const json = JSON.stringify(result, null, 2);
-    navigator.clipboard.writeText(json)
-      .then(() => alert("JSON kopyalandı!"))
-      .catch(err => console.error("Kopyalama hatası:", err));
-  };
-
-  // Dosyayı indir
-  const downloadJson = () => {
-    if (!result) return;
-    
-    const json = JSON.stringify(result, null, 2);
-    const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${result.id || 'puzzle_set'}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-
-  return (
-    <div className="p-4 bg-white rounded-lg shadow-md">
-      <h2 className="text-xl font-bold mb-4">PGN İçe Aktar</h2>
+    try {
+      const response = await fetch('/fc3.pgn');
+      if (!response.ok) {
+        throw new Error(`HTTP hata! Durum: ${response.status}`);
+      }
       
-      {/* Dosya yükleme */}
-      <div className="mb-4">
+      const text = await response.text();
+      console.log("Yüklenen örnek PGN (ilk 100 karakter):", text.substring(0, 100) + "...");
+      
+      // Tüm PGN'i metin kutusuna yükle
+      setPgnText(text);
+      setMessage('Örnek PGN başarıyla yüklendi. İçe aktarmak için "İçe Aktar" butonuna tıklayın.');
+    } catch (err) {
+      console.error("Örnek PGN yükleme hatası:", err);
+      setError(`Örnek PGN yükleme hatası: ${err.message}`);
+    }
+    
+    setIsLoading(false);
+  };
+  
+  // Dosya yükleme işleyicisi
+  const handleFileUpload = (event) => {
+    setError(null);
+    setMessage(null);
+    
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    // Sadece .pgn dosyalarını kabul et
+    if (!file.name.toLowerCase().endsWith('.pgn')) {
+      setError('Lütfen sadece .pgn uzantılı dosyalar yükleyin');
+      return;
+    }
+    
+    setIsLoading(true);
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const text = e.target.result;
+        setPgnText(text);
+        setMessage('PGN dosyası başarıyla yüklendi. İçe aktarmak için "İçe Aktar" butonuna tıklayın.');
+        setIsLoading(false);
+      } catch (err) {
+        setError(`PGN dosyası okuma hatası: ${err.message}`);
+        setIsLoading(false);
+      }
+    };
+    
+    reader.onerror = () => {
+      setError('Dosya okuma hatası');
+      setIsLoading(false);
+    };
+    
+    reader.readAsText(file);
+  };
+  
+  // Doğrudan import butonu için tıklama işleyici
+  const handleFileSelectClick = () => {
+    fileInputRef.current.click();
+  };
+  
+  return (
+    <div className="pgn-importer">
+      <h3 className="text-xl font-semibold mb-4 text-gray-700">PGN İçe Aktar</h3>
+      
+      {error && (
+        <div className="bg-red-100 border-l-4 border-red-500 p-4 mb-4 text-red-700">
+          {error}
+        </div>
+      )}
+      
+      {message && (
+        <div className="bg-green-100 border-l-4 border-green-500 p-4 mb-4 text-green-700">
+          {message}
+        </div>
+      )}
+      
+      <textarea
+        className="w-full p-3 border rounded-md bg-gray-50 font-mono text-sm resize-y min-h-[200px] focus:ring-2 focus:ring-blue-300 focus:border-blue-500 focus:outline-none"
+        rows="10"
+        placeholder="PGN metnini buraya yapıştırın..."
+        value={pgnText}
+        onChange={(e) => setPgnText(e.target.value)}
+        disabled={isLoading}
+      />
+      
+      <div className="flex flex-wrap gap-3 mt-4">
+        <button 
+          onClick={handleImport} 
+          disabled={isLoading} 
+          className="px-4 py-2 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isLoading ? 'İçe Aktarılıyor...' : 'İçe Aktar'}
+        </button>
+        
+        <button 
+          onClick={loadSamplePgn} 
+          disabled={isLoading}
+          className="px-4 py-2 bg-green-600 text-white font-medium rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Örnek PGN Yükle
+        </button>
+        
+        <button 
+          onClick={handleFileSelectClick} 
+          disabled={isLoading}
+          className="px-4 py-2 bg-gray-600 text-white font-medium rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          PGN Dosyası Seç...
+        </button>
+        
         <input
           type="file"
-          ref={fileInputRef}
           accept=".pgn"
           onChange={handleFileUpload}
+          ref={fileInputRef}
           className="hidden"
         />
-        <button
-          onClick={() => fileInputRef.current.click()}
-          className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center"
-          disabled={loading}
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
-          </svg>
-          PGN Dosyası Seç
-        </button>
       </div>
-
-      {/* Yükleniyor göstergesi */}
-      {loading && (
-        <div className="my-4 text-center">
-          <svg className="animate-spin h-8 w-8 mx-auto text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-          <p className="mt-2">PGN işleniyor...</p>
-        </div>
-      )}
-
-      {/* Hata mesajı */}
-      {error && (
-        <div className="my-4 p-4 bg-red-100 text-red-700 rounded-lg">
-          <p className="font-bold">Hata:</p>
-          <p>{error}</p>
-        </div>
-      )}
-
-      {/* Sonuç */}
-      {result && (
-        <div className="mt-4">
-          <div className="flex justify-between items-center mb-2">
-            <h3 className="text-lg font-semibold">Dönüştürme Başarılı</h3>
-            <div className="space-x-2">
-              <button 
-                onClick={copyToClipboard}
-                className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded"
-              >
-                Kopyala
-              </button>
-              <button 
-                onClick={downloadJson}
-                className="bg-purple-500 hover:bg-purple-600 text-white px-3 py-1 rounded"
-              >
-                İndir
-              </button>
-            </div>
-          </div>
-          
-          <div className="border rounded-lg p-3 bg-gray-50">
-            <div className="mb-3">
-              <span className="font-bold">ID:</span> {result.id}<br/>
-              <span className="font-bold">Başlık:</span> {result.title}<br/>
-              <span className="font-bold">Puzzle Sayısı:</span> {result.puzzles?.length || 0}
-            </div>
-            
-            <div className="max-h-96 overflow-y-auto bg-gray-800 text-green-300 p-3 rounded font-mono text-sm">
-              <pre>{JSON.stringify(result, null, 2)}</pre>
-            </div>
-          </div>
-        </div>
-      )}
+      
+      <div className="mt-6 p-4 bg-gray-50 border border-gray-200 rounded-md">
+        <h4 className="font-semibold text-gray-700 mb-2">Test İpuçları:</h4>
+        <ul className="list-disc list-inside space-y-1 text-gray-600 text-sm">
+          <li>"Örnek PGN Yükle" butonu ile /public/fc3.pgn dosyasını yükleyebilirsiniz</li>
+          <li>PGN metnini metin kutusuna yapıştırabilirsiniz</li>
+          <li>Kendi PGN dosyanızı seçip yükleyebilirsiniz</li>
+          <li>İçe aktardıktan sonra varyantların doğru tespit edilip edilmediğini kontrol edin</li>
+        </ul>
+      </div>
     </div>
   );
-}
+};
+
+export default PgnImporter;
