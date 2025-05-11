@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Chessboard } from 'react-chessboard';
 import { Chess } from 'chess.js';
 import { useParams } from 'react-router-dom';
-import { loadLessonById } from '../../utils/lessons/loadLessonData';
+import { loadLessonById } from '../../data/lessons/loadLessonData';
 import { 
   saveLessonProgress, 
   loadLessonProgress,
@@ -229,18 +229,7 @@ const LessonPage = () => {
   
   return (
     <div className="flex flex-col items-center p-4 max-w-4xl mx-auto">
-      {/* Ders başlığı */}
       <h1 className="text-2xl font-bold mb-2">{lessonData.title}</h1>
-      
-      {/* İlerleme çubuğu */}
-      <div className="w-full max-w-xl bg-gray-200 rounded-full h-2.5 mb-4">
-        <div 
-          className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
-          style={{ width: `${progressPercentage}%` }}
-          title={`İlerleme: %${progressPercentage}`}
-        ></div>
-      </div>
-      
       <div className="flex flex-col md:flex-row w-full gap-6">
         {/* Sol taraf: Satranç tahtası */}
         <div className="flex-1 flex justify-center">
