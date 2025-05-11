@@ -23,7 +23,10 @@ class ChessContentManager {
    */
   resetTree(fen) {
     // FEN validasyonu olmadan direkt kullan
-    const startFen = fen || DEFAULT_FEN;
+    let startFen = fen || DEFAULT_FEN;
+    
+    // FEN dizesini düzelt
+    startFen = this.fixFenString(startFen);
     
     // Düğüm ağacını sıfırla
     this.tree = {
@@ -92,7 +95,9 @@ class ChessContentManager {
           
           // Ana hat ve varyantları işle
           if (parsedGame.moves && parsedGame.moves.length > 0) {
-            const chess = new Chess(fen);
+            // FEN'i düzeltmeden önce Chess nesnesini oluştur
+            const fixedFen = this.fixFenString(fen);
+            const chess = new Chess(fixedFen);
             this.processMainLine(chess, parsedGame.moves, this.tree, "root");
           }
           
@@ -532,6 +537,31 @@ class ChessContentManager {
   getCurrentFen() {
     const currentNodeId = this.tree.metadata.currentNodeId;
     return this.tree.nodes.get(currentNodeId)?.fen || this.chess.fen();
+  }
+  
+  /**
+   * FEN dizesini düzelt
+   * @param {string} fen - FEN dizesi
+   * @returns {string} - Düzeltilmiş FEN dizesi
+   */
+  fixFenString(fen) {
+    if (!fen || typeof fen !== 'string') return DEFAULT_FEN;
+    
+    // FEN bölümlerine ayır
+    const parts = fen.trim().split(' ');
+    
+    // 6 bölüm yoksa standart FEN'i döndür
+    if (parts.length !== 6) return DEFAULT_FEN;
+    
+    // Hamle numarası kontrolü (6. bölüm)
+    const moveNumber = parseInt(parts[5]);
+    if (isNaN(moveNumber) || moveNumber <= 0) {
+      // Hamle numarasını 1 yap
+      parts[5] = '1';
+    }
+    
+    // Düzeltilmiş FEN'i döndür
+    return parts.join(' ');
   }
 }
 
