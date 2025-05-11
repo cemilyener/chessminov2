@@ -1,0 +1,30 @@
+{
+  "title": "Örnek Ders 1",
+  "initialFen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+  "nodes": {
+    "root": {
+      "id": "root",
+      "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+      "parentId": null,
+      "childrenIds": ["node_e2e4"],
+      "move": null,
+      "metadata": { "comment": "Başlangıç pozisyonu" }
+    },
+    "node_e2e4": {
+      "id": "node_e2e4",
+      "fen": "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1",
+      "parentId": "root",
+      "childrenIds": ["node_e7e5"],
+      "move": { "from": "e2", "to": "e4", "san": "e4" },
+      "metadata": { "comment": "Beyaz e4 oynadı." }
+    },
+    "node_e7e5": {
+      "id": "node_e7e5",
+      "fen": "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2",
+      "parentId": "node_e2e4",
+      "childrenIds": [],
+      "move": { "from": "e7", "to": "e5", "san": "e5" },
+      "metadata": { "comment": "Siyah e5 oynadı. Ders bitti!" }
+    }
+  }
+}
