@@ -62,16 +62,12 @@ class ChessContentManager {
    */
   async loadFromPgn(pgn) {
     try {
-      console.log("PGN yükleme başlatılıyor...");
-      
       // PGN'i ayrıştır
       const games = this.splitPgnGames(pgn);
       if (games.length === 0) {
         console.error("Geçerli oyun bulunamadı");
         return false;
       }
-      
-      console.log(`${games.length} oyun bulundu, ayrıştırılıyor...`);
       
       this.parsedGames = [];
       
@@ -83,16 +79,6 @@ class ChessContentManager {
           if (!parsedGame) {
             console.error("Oyun ayrıştırılamadı");
             continue;
-          }
-          
-          // Varyant kontrolü için debug log
-          const movesWithVariations = parsedGame.moves.filter(m => 
-            m.variations && m.variations.length > 0
-          );
-          
-          console.log(`Varyant içeren hamle sayısı: ${movesWithVariations.length}`);
-          if (movesWithVariations.length > 0) {
-            console.log("İlk varyantlı hamle örneği:", movesWithVariations[0]);
           }
           
           // FEN başlığını al
@@ -125,7 +111,6 @@ class ChessContentManager {
         }
       }
       
-      console.log(`${this.parsedGames.length} oyun başarıyla ayrıştırıldı`);
       return this.parsedGames.length > 0;
       
     } catch (error) {
@@ -176,7 +161,6 @@ class ChessContentManager {
         
         // Varyantları işle
         if (moveData.variations && moveData.variations.length > 0) {
-          console.log(`"${sanNotation}" hamlesi için ${moveData.variations.length} varyant bulundu`);
           
           for (const variation of moveData.variations) {
             // Geçici pozisyonu kaydet
@@ -220,8 +204,6 @@ class ChessContentManager {
    * @returns {Object} - Güncellenen oyun ağacı
    */
   processVariation(chess, moves, tree, parentId) {
-    // DEBUG: Varyant işleme
-    console.log(`Varyant işleniyor: Ebeveyn=${parentId}, Hamle sayısı=${moves.length}`);
     
     let currentId = parentId;
     
@@ -355,12 +337,6 @@ class ChessContentManager {
   export() {
     try {
       const puzzles = this.parsedGames.map((game, index) => {
-        // Ağaç yapısına genel bakış
-        console.log("Ağaç yapısına genel bakış:", {
-          düğümSayısı: game.gameTree.nodes.size,
-          anaHatDüğümleri: game.gameTree.metadata.mainLineNodeIds?.length || 0,
-          kökDüğümBilgisi: game.gameTree.nodes.get("root")?.metadata
-        });
         
         // Ana hat düğümlerini topla
         const mainLine = [];
@@ -374,10 +350,9 @@ class ChessContentManager {
             mainLine.push(node.move.san);
           }
         }
-        console.log("Ana hat hamleleri:", mainLine);
         
         // Varyant başlangıç düğümlerini bul
-        const variantStarterNodes = [];
+        const variantStarterNodes = []; // Bu değişken tanımlaması eksikti
         
         // Ana hat düğümlerinin tüm çocuklarını kontrol et
         for (let i = 0; i < mainLineNodeIds.length; i++) {
@@ -397,7 +372,6 @@ class ChessContentManager {
             }
           }
         }
-        console.log("Varyant başlangıç düğümleri:", variantStarterNodes);
         
         // Ana hat olmayan düğümleri kontrol et
         let nonMainLineCount = 0;
@@ -406,7 +380,6 @@ class ChessContentManager {
             nonMainLineCount++;
           }
         });
-        console.log(`Toplam ${nonMainLineCount} ana hat olmayan düğüm var`);
         
         // Varyantları topla
         const variations = [];
@@ -441,10 +414,8 @@ class ChessContentManager {
               startMoveIndex: starter.mainLineIndex,
               moves: variantMoves
             });
-            console.log(`Varyant bulundu: Ana hat indeksi ${starter.mainLineIndex}, Hamleler: ${variantMoves.join(', ')}`);
           }
         }
-        console.log("Tespit edilen varyantlar:", variations);
         
         // Puzzle nesnesi oluştur
         return {
@@ -466,10 +437,6 @@ class ChessContentManager {
         },
         puzzles
       };
-      
-      console.log("Export sonuç varyantları:", 
-        result.puzzles.map(p => ({id: p.id, variantCount: p.variations.length, variants: p.variations}))
-      );
       
       return result;
     } catch (error) {
@@ -498,7 +465,6 @@ class ChessContentManager {
         mainLine.push(node.move.san);
       }
     }
-    console.log("Ana hat hamleleri toplandı:", mainLine);
     
     // 2. Varyant başlangıç düğümlerini bul
     // Bunlar, ana hat düğümlerinin ana hat olmayan çocuklarıdır
@@ -522,7 +488,6 @@ class ChessContentManager {
         }
       }
     }
-    console.log("Varyant başlangıç düğümleri:", variantStarterNodes);
     
     // 3. Her varyant için hamleleri topla
     for (const starter of variantStarterNodes) {
@@ -554,37 +519,7 @@ class ChessContentManager {
           startMoveIndex: starter.mainLineIndex,
           moves: variantMoves
         });
-        console.log(`Varyant bulundu: Ana hat indeksi ${starter.mainLineIndex}, Hamleler: ${variantMoves.join(', ')}`);
       }
-    }
-    
-    console.log("Sonuçta ana hat:", mainLine);
-    console.log("Sonuçta varyantlar:", variations);
-    
-    // extractMovesFromTree metoduna eklenecek
-    // Başlangıçta ağaç yapısını kontrol et
-    console.log("Ağaç yapısına genel bakış:", {
-      düğümSayısı: tree.nodes.size,
-      anaHatDüğümleri: tree.metadata.mainLineNodeIds?.length || 0,
-      kökDüğümBilgisi: tree.nodes.get("root")?.metadata
-    });
-    
-    // Varyant başlangıç düğümlerini aradıktan sonra
-    if (variantStarterNodes.length === 0) {
-      console.log("UYARI: Hiç varyant başlangıç düğümü bulunamadı!");
-      // Ana hat olmayan tüm düğümleri say
-      let nonMainLineCount = 0;
-      tree.nodes.forEach((node, id) => {
-        if (id !== "root" && node.metadata && node.metadata.isMainLine === false) {
-          nonMainLineCount++;
-          console.log("Ana hat olmayan düğüm:", {
-            id,
-            parentId: node.parentId,
-            hamle: node.move?.san
-          });
-        }
-      });
-      console.log(`Toplamda ${nonMainLineCount} ana hat olmayan düğüm bulundu ama varyant başlangıcı tespit edilemedi.`);
     }
     
     return { mainLine, variations };
