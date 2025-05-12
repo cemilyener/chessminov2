@@ -78,6 +78,16 @@ const HomePage = () => {
                 </div>
               </div>
             </Link>
+            {/* Temel Tahta Kart */}
+            <Link to="/basic-board" className="bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow text-center">
+              <div className="bg-indigo-100 inline-block p-4 rounded-full mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold mb-2">Temel Tahta</h3>
+              <p className="text-gray-600">Ok çizme ve kare renklendirme özellikleriyle basit satranç tahtası</p>
+            </Link>
           </div>
         </div>
       </section>

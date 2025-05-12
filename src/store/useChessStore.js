@@ -1,12 +1,14 @@
 // filepath: c:\Users\PC\Desktop\chessminov2\src\store\useChessStore.js
 import { create } from 'zustand';
 import ChessContentManager from '../utils/chess/ChessContentManager';
+import { Chess } from 'chess.js';
+import { ExtendedChess } from '../utils/chess/ExtendedChess.js';
 
 // ChessContentManager örneği oluştur
 const manager = new ChessContentManager();
 
 const useChessStore = create((set, get) => ({
-  // State 
+  // Mevcut state 
   puzzleSets: [],
   currentSetIndex: -1,
   currentFen: manager.getCurrentFen(),
@@ -16,6 +18,10 @@ const useChessStore = create((set, get) => ({
   history: [],
   isLoading: false,
   error: null,
+  
+  // BasicBoard için ekstra state'ler
+  arrows: [], // Ok çizgileri - örnek format: [["a1", "a3", "blue"], ["h1", "h8", "red"]]
+  highlightedSquares: {}, // Renkli kareler - örnek: { "e4": "blue", "d5": "red" }
   
   // PGN yükleme işlemi
   loadPgnText: async (pgnText) => {
@@ -191,7 +197,47 @@ const useChessStore = create((set, get) => ({
   },
 
   // ChessContentManager'a doğrudan erişim
-  getManager: () => manager
+  getManager: () => manager,
+
+  // Board için yöntemler
+  setPosition: (fen, allowKingless = false) => {
+    try {
+      if (allowKingless) {
+        // Şahsız konumlar için ExtendedChess kullan
+        const chess = new ExtendedChess(fen, { bypass: [10] });
+        set({ currentFen: chess.fen() });
+      } else {
+        // Normal pozisyonlar için standart chess.js doğrulaması
+        const chess = new Chess(fen);
+        set({ currentFen: chess.fen() });
+      }
+    } catch (error) {
+      console.error("Geçersiz FEN:", error);
+    }
+  },
+  
+  // Ok çizme fonksiyonları
+  addArrow: (from, to, color = "blue") => set(state => ({
+    arrows: [...state.arrows, [from, to, color]]
+  })),
+  
+  clearArrows: () => set({ arrows: [] }),
+  
+  // Kare renklendirme fonksiyonları
+  highlightSquare: (square, color = "blue") => set(state => ({
+    highlightedSquares: { 
+      ...state.highlightedSquares, 
+      [square]: color 
+    }
+  })),
+  
+  clearHighlightedSquare: (square) => set(state => {
+    const newHighlighted = { ...state.highlightedSquares };
+    delete newHighlighted[square];
+    return { highlightedSquares: newHighlighted };
+  }),
+  
+  clearAllHighlights: () => set({ highlightedSquares: {} })
 }));
 
 export default useChessStore;
