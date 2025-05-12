@@ -1,4 +1,4 @@
-tebrik ederim  import React, { useState, useMemo, useEffect, useRef } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { Chessboard, ChessboardDnDProvider, SparePiece } from "react-chessboard";
 import { ExtendedChess } from "../../utils/chess/ExtendedChess.js";
 import { HTML5Backend } from "react-dnd-html5-backend";
