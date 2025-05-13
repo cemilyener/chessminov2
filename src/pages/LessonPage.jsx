@@ -1,14 +1,13 @@
-// src/components/lessons/LessonPage.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import { Chessboard } from 'react-chessboard';
 import { Chess } from 'chess.js';
 import { useParams } from 'react-router-dom';
-import { loadLessonById } from '../../data/lessons/loadLessonData';
+import { loadLessonById } from '@/data/lessons/loadLessonData';
 import { 
   saveLessonProgress, 
   loadLessonProgress,
   addToRecentLessons 
-} from '../../utils/lessons/saveLessonProgress';
+} from '@/utils/lessons/saveLessonProgress';
 
 const LessonPage = () => {
   // URL'den lessonId parametresini al

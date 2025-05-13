@@ -157,7 +157,7 @@ function markSubtreeNonMainline(nodeMap, nodeId) {
  */
 export const loadLessonById = async (lessonId) => {
   try {
-    const lessonFilePath = `src/data/lessons/${lessonId}.json`;
+    const lessonFilePath = `/data/lessons/${lessonId}.json`;
     return await loadLessonData(lessonFilePath);
   } catch (error) {
     console.error(`${lessonId} ID'li ders yüklenirken hata:`, error);
@@ -171,7 +171,7 @@ export const loadLessonById = async (lessonId) => {
  */
 export const loadAllLessons = async () => {
   try {
-    const response = await fetch('src/data/lessons/lessonsList.json');
+    const response = await fetch('/data/lessons/lessonsList.json');
     if (!response.ok) {
       throw new Error(`Ders listesi yüklenemedi: ${response.status}`);
     }

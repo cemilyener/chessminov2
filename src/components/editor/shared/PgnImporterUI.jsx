@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 
-const PgnImporter = ({ onImport }) => {
+const PgnImporterUI = ({ onImport }) => {
   const [pgnText, setPgnText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -172,4 +172,4 @@ const PgnImporter = ({ onImport }) => {
   );
 };
 
-export default PgnImporter;
+export default PgnImporterUI;
