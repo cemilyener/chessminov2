@@ -1,0 +1,56 @@
+# ChessMino Projesi Giriş Mesajı
+
+Merhaba! ChessMino projesinin yeni aşaması için yardım almak istiyorum. Projenin şu anki durumu ve hedeflerimiz hakkında kısa bir özet:
+
+## Tamamlanan Aşama: PGN -> JSON Dönüşümü MVP
+
+✅ **10 Mayıs 2025** tarihinde MVP'nin ilk aşamasını başarıyla tamamladık:
+- PGN dosyalarını `@mliebelt/pgn-parser` ile ayrıştırma işlemi
+- Ana hat ve varyantları düğüm ağacı yapısında modelleme
+- Varyantları doğru tespit edip standart JSON formatına aktarma
+- ChessContentManager sınıfı ile düğüm tabanlı satranç içeriği yönetimi
+- useChessContent hook'undan Zustand store'a geçiş
+
+## Mevcut Teknik Altyapı
+
+- **ChessContentManager**: PGN ayrıştırma ve düğüm ağacı oluşturma işlemlerini yapan çekirdek sınıf
+- **Zustand Store**: Uygulama genelinde durum yönetimi (useChessStore.js)
+- **BoardEditor**: Satranç tahtası ve varyant görüntüleme için UI
+- **PgnImporter**: PGN dosyalarını yükleme komponenti
+
+## Şu Anki Hedef: JSON Puzzle Setlerini UI'da Gösterme
+
+Şimdi odaklanmamız gereken adım:
+1. **JSON Verilerini Yükleme**:
+   - ChessContentManager'a `loadFromJson` metodu eklemek
+   - `setupPuzzle(puzzleId)` metoduyla belirli puzzle'ları aktifleştirmek
+   
+2. **UI Geliştirmeleri**:
+   - Puzzle setlerini listeleyen ve seçim yapan komponenti oluşturmak
+   - Varyant gösterimini iyileştirmek ve etkileşimli hale getirmek
+   - Puzzle navigasyonu için arayüz eklemek
+
+3. **Kullanıcı İlerleme İzleme**:
+   - Puzzle çözme durumunu takip eden sistem oluşturmak
+   - `isCorrectMove` metoduyla hamlelerin doğruluğunu kontrol etmek
+
+Şu ana kadar oluşturduğumuz JSON formatı şu şekilde:
+```json
+{
+  "metadata": { "title": "...", "source": "...", "count": 18 },
+  "puzzles": [
+    {
+      "id": "puzzle-1",
+      "title": "Başlık",
+      "difficulty": 1,
+      "fen": "...",
+      "mainLine": ["hamle1", "hamle2", ...],
+      "variations": [
+        { "startMoveIndex": 12, "moves": ["hamle1", "hamle2", ...] }
+      ]
+    }
+  ]
+}
+```
+
+Yardımınızı bu yeni hedefte kullanmak istiyorum. Özellikle ChessContentManager'a eklememiz gereken JSON yükleme ve puzzle seçme özellikleriyle başlamak istiyorum. Nereden başlamamı önerirsiniz?
