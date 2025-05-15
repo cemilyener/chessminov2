@@ -6,6 +6,8 @@ import LessonPage from '@/pages/LessonPage';
 import BoardEditorSetupPage from '@/pages/BoardEditorSetupPage';
 import BoardEditorDemoPage from '@/pages/BoardEditorDemoPage';
 import PgnConverterToolPage from '@/pages/PgnConverterToolPage';
+import PDFGenerator from '@/components/editor/PDFGenerator';
+import BasicBoardPage from '@/components/board/BasicBoardPage';
 import './App.css';
 
 function App() {
@@ -18,6 +20,8 @@ function App() {
         <Route path="/editor" element={<BoardEditorSetupPage />} />
         <Route path="/pgn-converter" element={<PgnConverterToolPage />} />
         <Route path="/board-editor-demo" element={<BoardEditorDemoPage />} />
+        <Route path="/pdf-generator" element={<PDFGenerator />} />
+        <Route path="/basic-board" element={<BasicBoardPage />} />
       </Routes>
     </Router>
   );

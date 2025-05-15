@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { FaFilePdf } from 'react-icons/fa';
 
 const HomePage = () => {
   return (
@@ -61,6 +62,15 @@ const HomePage = () => {
               <p className="text-gray-600 mb-4">Adım adım rehberli derslerle satranç öğrenin.</p>
               <span className="mt-2 inline-block text-amber-700 font-medium">Derslere Başla</span>
             </Link>
+            {/* PDF Oluşturucu Kart */}
+            <Link to="/pdf-generator" className="bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow text-center">
+              <div className="bg-green-100 inline-block p-4 rounded-full mb-4">
+                <FaFilePdf className="h-10 w-10 text-green-600" />
+              </div>
+              <h3 className="text-xl font-semibold text-green-800 mb-3">PDF Ödev Oluşturucu</h3>
+              <p className="text-gray-600 mb-4">Özelleştirilmiş satranç çalışma sayfaları oluşturun</p>
+              <span className="mt-2 inline-block text-green-700 font-medium">PDF Oluştur</span>
+            </Link>
             {/* BoardEditor Kart */}
             <Link to="/editor" className="md:col-span-2 lg:col-span-3 bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow">
               <div className="flex flex-col md:flex-row items-center">
@@ -87,6 +97,17 @@ const HomePage = () => {
               </div>
               <h3 className="text-lg font-semibold mb-2">PGN Dönüştürücü</h3>
               <p className="text-gray-600">PGN dosyalarını sisteminize uygun formatlara dönüştürün</p>
+            </Link>
+            {/* Basic Board Page Kart */}
+            <Link to="/basic-board" className="bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow text-center">
+              <div className="bg-gray-100 inline-block p-4 rounded-full mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M19 3v4m-2-2h4M5 19v-4m-2 2h4m14 0v-4m-2 2h4M7 7h10v10H7V7z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-800 mb-3">Basic Board</h3>
+              <p className="text-gray-600 mb-4">Temel satranç tahtası özelliklerini keşfedin.</p>
+              <span className="mt-2 inline-block text-gray-700 font-medium">Tahtayı İncele</span>
             </Link>
           </div>
         </div>

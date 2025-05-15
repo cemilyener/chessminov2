@@ -10,4 +10,4 @@ const ChessBoard = ({ position, onPieceDrop }) => {
   );
 };
 
-export default ChessBoard;
+export default React.memo(ChessBoard);
