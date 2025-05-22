@@ -71,6 +71,19 @@ const HomePage = () => {
               <p className="text-gray-600 mb-4">Özelleştirilmiş satranç çalışma sayfaları oluşturun</p>
               <span className="mt-2 inline-block text-green-700 font-medium">PDF Oluştur</span>
             </Link>
+            {/* Worksheet Kartı */}
+            <div className="bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow text-center">
+              <div className="bg-green-100 inline-block p-4 rounded-full mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-semibold text-green-800 mb-3">Çalışma Sayfaları</h3>
+              <p className="text-gray-600 mb-4">Basit ve yazdırılabilir satranç çalışma kağıtları oluşturun.</p>
+              <Link to="/worksheet" className="mt-2 inline-block text-green-700 font-medium hover:text-green-800 transition-colors">
+                Çalışma Sayfasına Git
+              </Link>
+            </div>
             {/* BoardEditor Kart */}
             <Link to="/editor" className="md:col-span-2 lg:col-span-3 bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow">
               <div className="flex flex-col md:flex-row items-center">

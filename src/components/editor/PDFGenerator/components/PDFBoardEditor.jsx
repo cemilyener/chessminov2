@@ -1,9 +1,8 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { Chessboard, ChessboardDnDProvider, SparePiece } from "react-chessboard";
-import { ExtendedChess } from "../../../utils/chess/ExtendedChess.js";
+import { ExtendedChess } from "../../../../utils/chess/ExtendedChess.js";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import { useId } from "react";
-import usePdfStore from './usePdfStore';
 
 // Styles
 const buttonStyle = {
@@ -24,7 +23,6 @@ const PDFBoardEditor = ({
   moveOrder = "white",
   isCapturing
 }) => {
-  const { setPosition } = usePdfStore();
   const uniqueId = useId();
   const boardRef = useRef(null);
   const prevFenRef = useRef(null); // Bu ref'i buraya taşıdık
@@ -84,19 +82,14 @@ const PDFBoardEditor = ({
     
     // Mevcut değeri güncelle
     prevFenRef.current = fenPosition;
-    
-    // PDF Store'u güncelle
-    try {
-      setPosition(fenPosition, true);
-    } catch (error) {
-      console.error("PDF Store güncelleme hatası:", error);
-    }
+      // Artık PDF Store'u direkt burada güncellemiyoruz
+    // Parent bileşen onPositionChange ile güncelliyor
     
     // Parent bileşene pozisyon değişikliğini bildir
     if (onPositionChange) {
       onPositionChange(fenPosition, currentMoveOrder);
     }
-  }, [fenPosition, currentMoveOrder, onPositionChange, setPosition]);
+  }, [fenPosition, currentMoveOrder, onPositionChange]);
 
   // Taş yerleştirme işlevi (yedek taş paletinden)
   const handleSparePieceDrop = useCallback((piece, targetSquare) => {

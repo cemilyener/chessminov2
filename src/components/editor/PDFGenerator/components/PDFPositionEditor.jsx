@@ -4,6 +4,30 @@ import { toPng } from 'html-to-image';
 import BasicBoardPage from '../../../board/BasicBoardPage';
 
 /**
+ * Base64 formatının geçerli olup olmadığını kontrol et
+ * @param {string} base64String - Kontrol edilecek Base64 dizisi
+ * @returns {boolean} - Base64 formatı geçerli mi?
+ */
+const isValidBase64Image = (base64String) => {
+  if (!base64String || typeof base64String !== 'string') return false;
+  try {
+    // Base64 formatı düzgün mü kontrol et (data:image/ ile başlıyor mu?)
+    if (!base64String.startsWith('data:image/')) return false;
+    
+    // Base64 bölümünü al
+    const base64Data = base64String.split(',')[1];
+    if (!base64Data) return false;
+    
+    // Decode edilebiliyor mu?
+    window.atob(base64Data);
+    return true;
+  } catch (e) {
+    console.warn('Base64 doğrulama hatası:', e.message);
+    return false;
+  }
+};
+
+/**
  * PDFPositionEditor - PDF için pozisyon düzenleyici bileşeni
  * BasicBoardPage'i satranç pozisyonları oluşturmak için kullanır
  */
@@ -53,7 +77,46 @@ const PDFPositionEditor = () => {
     const fenParts = fen.split(' ');
     return fenParts.length > 1 && fenParts[1] === 'b' ? 'black' : 'white';
   }, [fen]);
-
+  /**
+   * Base64 formatının geçerli olup olmadığını kontrol et
+   * @param {string} base64String - Kontrol edilecek Base64 dizisi
+   * @returns {boolean} - Base64 formatı geçerli mi?
+   */
+  const validateBase64Image = useCallback((base64String) => {
+    if (!base64String || typeof base64String !== 'string') {
+      return false;
+    }
+    
+    try {
+      // Base64 formatını kontrol et (data:image/ ile başlıyor mu?)
+      if (!base64String.startsWith('data:image/')) {
+        console.warn('Geçersiz base64 format (data:image/ ile başlamıyor)');
+        return false;
+      }
+      
+      // base64 kısmını ayır
+      const parts = base64String.split(',');
+      if (parts.length !== 2) {
+        console.warn('Geçersiz base64 formatı (bölünemeyen data)');
+        return false;
+      }
+      
+      // Geçerli base64 karakterleri kontrolü
+      const validBase64Regex = /^[A-Za-z0-9+/=]+$/;
+      if (!validBase64Regex.test(parts[1])) {
+        console.warn('Geçersiz base64 karakterleri içeriyor');
+        return false;
+      }
+      
+      // base64 kodu doğru mu?
+      window.atob(parts[1]);
+      return true;
+    } catch (error) {
+      console.warn('Base64 doğrulama hatası:', error.message);
+      return false;
+    }
+  }, []);
+  
   // Ekran görüntüsü al ve pozisyon kaydet
   const captureAndSave = useCallback(async () => {
     if (!captureRef.current) {
@@ -70,12 +133,21 @@ const PDFPositionEditor = () => {
         quality: 1.0,
         pixelRatio: 2, // Daha yüksek çözünürlük için
         backgroundColor: '#FFFFFF',
+        cacheBust: true, // Önbelleği devre dışı bırak
         style: {
           // Yazdırma için özel stiller
           boxShadow: 'none',
-          border: '1px solid #ccc'
-        }
+          border: '1px solid #ccc',
+          transform: 'none' // Transform değerlerini temizle
+        },
+        width: 400, // Sabit genişlik
+        height: 400 // Sabit yükseklik - kare oran
       });
+
+      // Base64 formatını doğrula
+      if (!validateBase64Image(screenshot)) {
+        throw new Error('Görüntü yakalama başarısız: Geçersiz base64 formatı');
+      }
 
       // Pozisyon objesi oluştur
       const position = {
@@ -106,7 +178,7 @@ const PDFPositionEditor = () => {
     } finally {
       setIsCapturing(false);
     }
-  }, [fen, title, description, moveOrder, positions.length, editMode, currentPositionId, updatePosition, addPosition]);
+  }, [fen, title, description, moveOrder, positions.length, editMode, currentPositionId, updatePosition, addPosition, validateBase64Image]);
 
   return (
     <div className="pdf-position-editor bg-white p-6 rounded-lg shadow-md">

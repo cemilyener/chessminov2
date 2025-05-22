@@ -1,0 +1,165 @@
+/* Chess Worksheet Styles */
+
+.chess-worksheet {
+  background-color: #f1f5f9;
+  padding: 2rem 1rem;
+}
+
+/* Extra small text for tight spaces */
+.text-xxs {
+  font-size: 0.65rem;
+  line-height: 1;
+}
+
+/* Pozisyon ızgarası */
+.positions-grid {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 2rem;
+}
+
+@media (min-width: 768px) {
+  .positions-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.position-item {
+  background: white;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+}
+
+/* Ekranda görünmeli, yazdırmada gizlenmeli */
+.screen-only {
+  display: block;
+}
+
+/* Yazdırmada görünmeli, ekranda gizlenmeli */
+.print-only {
+  display: none;
+}
+
+/* Yazdırma stilleri */
+@media print {
+  /* Genel yazdırma düzeni */
+  @page {
+    size: A4 portrait;
+    margin: 1mm !important; /* Minimum kenar boşluğu */
+    bleed: 0;
+  }
+  
+  body, html {
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background-color: white !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+    font-size: 10px !important; /* Smaller font size */
+  }
+  
+  /* Yazdırmada ekranda görünen kısımları gizle */
+  .screen-only {
+    display: none !important;
+  }
+  
+  /* Yazdırmada gizli olan kısımları göster */
+  .print-only {
+    display: block !important;
+  }
+  
+  /* Yazdırmada tablo boyutu küçült */
+  .positions-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 1mm !important; /* Daha az boşluk */
+    page-break-inside: avoid !important;
+    width: 100% !important;
+    max-width: 208mm !important; /* Slightly wider to use available space */
+    margin: 0 auto !important;
+    margin-bottom: 0 !important;
+  }
+  
+  .position-item {
+    page-break-inside: avoid !important;
+    border: 1px solid #000 !important;
+    box-shadow: none !important;
+    padding: 1mm !important; /* Reduced padding */
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+    width: 100% !important;
+    margin: 0 !important;
+  }
+
+  /* Chess board yazdırma boyutu */
+  .chess-board {
+    max-width: 68mm !important; /* Daha büyük tahta */
+    max-height: 68mm !important;
+    width: 100% !important;
+    height: auto !important;
+    box-sizing: border-box !important;
+    margin: 0 auto !important;
+  }
+  
+  .chess-worksheet {
+    background-color: white !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+  }
+
+  /* Yazdırma sınırını belirle */
+  .print-container {
+    page-break-inside: avoid !important;
+    overflow: hidden !important;
+    position: relative !important;
+    width: 100% !important;
+    max-width: 210mm !important; /* A4 genişliği */
+    padding: 0 !important;
+    margin: 0 auto !important;
+    height: 297mm !important; /* A4 yüksekliği */
+    overflow: visible !important;
+  }
+  
+  /* Yazdırma alanını belirgin şekilde sınırlandır */
+  .printable-content {
+    max-width: 210mm !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+  }
+  
+  /* Tarayıcı ayarları için notlar */
+  .instruction-note {
+    display: none !important;
+  }
+  
+  /* Minimize vertical spacing for print */
+  .print-container h1, .print-container p, .print-container div {
+    margin-top: 0 !important;
+    margin-bottom: 0.15rem !important; /* Smaller margins */
+    line-height: 1.1 !important; /* Tighter line height */
+  }
+  
+  /* Additional spacing optimizations */
+  .print-container h1 {
+    margin-bottom: 0.1rem !important;
+    font-size: 14px !important;
+  }
+
+  /* Üst kısımdaki boşlukları azalt */
+  .printable-content h1, 
+  .printable-content p {
+    margin-top: 0 !important;
+    margin-bottom: 1mm !important;
+  }
+  
+  /* Öğrenci bilgileri kısmını sıkıştır */
+  .printable-content .mb-2 {
+    margin-bottom: 1mm !important;
+  }
+}

@@ -87,6 +87,16 @@ const HomePage = () => {
               </div>
               <h3 className="text-lg font-semibold mb-2">Temel Tahta</h3>
               <p className="text-gray-600">Ok çizme ve kare renklendirme özellikleriyle basit satranç tahtası</p>
+            </Link>            {/* FEN Generator Card */}
+            <Link to="/fen-generator" className="bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow text-center">
+              <div className="bg-green-100 inline-block p-4 rounded-full mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-semibold text-green-800 mb-3">6 Diyagramlı Çalışma Sayfası</h3>
+              <p className="text-gray-600 mb-4">6 diyagramlı bir satranç çalışma sayfası oluşturun ve yazdırın.</p>
+              <span className="mt-2 inline-block text-green-700 font-medium">Çalışma Sayfası Oluştur</span>
             </Link>
           </div>
         </div>

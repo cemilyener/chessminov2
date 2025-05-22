@@ -1,0 +1,156 @@
+// filepath: c:\Users\PC\Desktop\chessminov2\src\components\editor\PDFGenerator\utils\imageUtils.js
+/**
+ * Base64 görüntü verilerini temizler ve onarır - Canvas tabanlı güvenli yaklaşım
+ * @param {string} base64String - İşlenecek base64 string
+ * @returns {Promise<string>} - Temizlenmiş base64 string veya placeholder
+ */
+export const sanitizeBase64Image = async (base64String) => {
+  // 1. Temel kontroller - her zaman string dönmesini sağla
+  if (!base64String) {
+    console.warn('ImageUtils: Base64 string geçersiz veya boş');
+    return getPlaceholderImage();
+  }
+  
+  // String değilse dönüştürmeye çalış
+  if (typeof base64String !== 'string') {
+    try {
+      console.warn('ImageUtils: Base64 string değil, dönüştürülüyor');
+      base64String = String(base64String);
+    } catch (e) {
+      console.error('ImageUtils: String dönüşümü başarısız:', e.message);
+      return getPlaceholderImage();
+    }
+  }
+  
+  // Görüntünün ilk 50 karakterini loglayalım (debugging için)
+  try {
+    const preview = base64String.substring(0, 50) + '...';
+    console.log(`ImageUtils: Base64 işleniyor: ${preview}`);
+  } catch (e) {
+    console.warn('ImageUtils: Base64 önizleme hatası:', e.message);
+    return getPlaceholderImage();
+  }
+  
+  // Format kontrolü
+  if (!base64String.startsWith('data:image/')) {
+    console.warn('ImageUtils: Geçersiz format, data:image/ ile başlamıyor');
+    return getPlaceholderImage();
+  }
+  
+  try {
+    // Canvas üzerinden görüntü oluştur, böylece atob() hatasını önle
+    const result = await convertBase64ViaCanvas(base64String);
+    
+    if (result && typeof result === 'string' && result.startsWith('data:image/')) {
+      console.log('ImageUtils: Görüntü başarıyla temizlendi');
+      return result;
+    } else {
+      console.warn('ImageUtils: Temizleme başarısız, sonuç geçersiz');
+      return getPlaceholderImage();
+    }
+  } catch (e) {
+    console.warn('ImageUtils: Base64 görüntü dönüşümü başarısız:', e.message);
+    return getPlaceholderImage();
+  }
+};
+
+/**
+ * Base64 görüntüyü Canvas üzerinden geçirerek temizler
+ * atob() kullanmadan çalışır, tarayıcının görüntü işleme yeteneklerini kullanır
+ * @param {string} base64Str - İşlenecek base64 görüntü
+ * @returns {Promise<string>} - Temizlenmiş base64 görüntü
+ */
+const convertBase64ViaCanvas = (base64Str) => {
+  if (typeof base64Str !== 'string') {
+    console.warn('ImageUtils: convertBase64ViaCanvas string değil');
+    return Promise.resolve(getPlaceholderImage());
+  }
+  
+  try {
+    // Canvas oluştur
+    const canvas = document.createElement('canvas');
+    canvas.width = 400; // Satranç tahtası için makul bir boyut
+    canvas.height = 400;
+    const ctx = canvas.getContext('2d');
+    
+    // Arkaplanı beyaz yap
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Görüntüyü canvas'a çizmek için bir Image nesnesi oluştur
+    const img = new Image();
+    
+    // Bir promise ile senkron hale getir
+    return new Promise((resolve) => {
+      // Yükleme tamamlandığında
+      img.onload = () => {
+        try {
+          // Görüntüyü canvas'a çiz
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          
+          try {
+            // Önce PNG olarak dene
+            const pngBase64 = canvas.toDataURL('image/png');
+            if (pngBase64 && pngBase64.startsWith('data:image/png')) {
+              resolve(pngBase64);
+              return;
+            }
+          } catch (pngErr) {
+            console.warn('PNG dönüşümü başarısız:', pngErr.message);
+          }
+          
+          try {
+            // PNG başarısız olursa JPEG dene
+            const jpegBase64 = canvas.toDataURL('image/jpeg', 0.9);
+            if (jpegBase64 && jpegBase64.startsWith('data:image/jpeg')) {
+              resolve(jpegBase64);
+              return;
+            }
+          } catch (jpegErr) {
+            console.warn('JPEG dönüşümü başarısız:', jpegErr.message);
+          }
+          
+          // Her iki format da başarısız olursa placeholder kullan
+          resolve(getPlaceholderImage());
+        } catch (drawErr) {
+          console.error('Canvas çizim hatası:', drawErr);
+          resolve(getPlaceholderImage());
+        }
+      };
+      
+      // Yükleme hatası
+      img.onerror = (err) => {
+        console.error('Görüntü yükleme hatası:', err);
+        resolve(getPlaceholderImage());
+      };
+      
+      // Src ayarlamada hata olabilir
+      try {
+        img.src = base64Str;
+      } catch (srcErr) {
+        console.error('Görüntü src hatası:', srcErr);
+        resolve(getPlaceholderImage());
+      }
+      
+      // 2 saniye içinde yüklenmezse timeout
+      setTimeout(() => {
+        if (!img.complete) {
+          console.warn('Görüntü yükleme zaman aşımı');
+          resolve(getPlaceholderImage());
+        }
+      }, 2000);
+    });
+  } catch (e) {
+    console.error('Canvas işleme hatası:', e);
+    return Promise.resolve(getPlaceholderImage());
+  }
+};
+
+/**
+ * jsPDF için güvenli, test edilmiş bir placeholder görüntü
+ * @returns {string} - Base64 encoded placeholder image
+ */
+export const getPlaceholderImage = () => {
+  // jsPDF ile test edilmiş güvenli bir 20x20 gri kare
+  return 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAhGVYSWZNTQAqAAAACAAGAQYAAwAAAAEAAgAAARIAAwAAAAEAAQAAARoABQAAAAEAAABWARsABQAAAAEAAABeASgAAwAAAAEAAgAAh2kABAAAAAEAAABmAAAAAAAAAEgAAAABAAAASAAAAAEAAqACAAQAAAABAAAAFKADAAQAAAABAAAAFAAAAAC79IYuAAAACXBIWXMAAA7EAAAOxAGVKw4bAAACZ2lUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iWE1QIENvcmUgNi4wLjAiPgogICA8cmRmOlJERiB4bWxuczpyZGY9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkvMDIvMjItcmRmLXN5bnRheC1ucyMiPgogICAgICA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0iIgogICAgICAgICAgICB4bWxuczp0aWZmPSJodHRwOi8vbnMuYWRvYmUuY29tL3RpZmYvMS4wLyIKICAgICAgICAgICAgeG1sbnM6ZXhpZj0iaHR0cDovL25zLmFkb2JlLmNvbS9leGlmLzEuMC8iPgogICAgICAgICA8dGlmZjpPcmllbnRhdGlvbj4xPC90aWZmOk9yaWVudGF0aW9uPgogICAgICAgICA8dGlmZjpSZXNvbHV0aW9uVW5pdD4yPC90aWZmOlJlc29sdXRpb25Vbml0PgogICAgICAgICA8ZXhpZjpQaXhlbFlEaW1lbnNpb24+MjA8L2V4aWY6UGl4ZWxZRGltZW5zaW9uPgogICAgICAgICA8ZXhpZjpQaXhlbFhEaW1lbnNpb24+MjA8L2V4aWY6UGl4ZWxYRGltZW5zaW9uPgogICAgICA8L3JkZjpEZXNjcmlwdGlvbj4KICAgPC9yZGY6UkRGPgo8L3g6eG1wbWV0YT4KOFXQCgAAAJlJREFUOBHtlDEOgCAQBM9YHBMba3+Cz7LwCfYWxsLEgpAYEiwsbsJSGCCbzO7NwRijUgpMCCFnbYTQdwFKqds5Y/TdUkoxxli9wzkHpRScE5RiuxpjQErJ+6337k4UM9Z7l5e6kppCUN3OuUQthRPwEcp7ZBAHCC8hmgJfYbsHsoVo7Qf/FmZtEQ3BZD9L5vYR1xam1TxC/z4RL4orOZehcFc9AAAAAElFTkSuQmCC';
+};
