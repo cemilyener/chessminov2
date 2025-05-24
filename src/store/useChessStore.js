@@ -18,10 +18,13 @@ const useChessStore = create((set, get) => ({
   history: [],
   isLoading: false,
   error: null,
-  
-  // BasicBoard için ekstra state'ler
+    // BasicBoard için ekstra state'ler
   arrows: [], // Ok çizgileri - örnek format: [["a1", "a3", "blue"], ["h1", "h8", "red"]]
   highlightedSquares: {}, // Renkli kareler - örnek: { "e4": "blue", "d5": "red" }
+  
+  // PDF Generator için state'ler
+  savedPositions: [], // Kaydedilen pozisyonlar - format: { fen: string, isWhiteTurn: boolean }
+  maxPositions: 6, // Maksimum kaydedilebilir pozisyon sayısı
   
   // PGN yükleme işlemi
   loadPgnText: async (pgnText) => {
@@ -230,14 +233,30 @@ const useChessStore = create((set, get) => ({
       [square]: color 
     }
   })),
-  
-  clearHighlightedSquare: (square) => set(state => {
+    clearHighlightedSquare: (square) => set(state => {
     const newHighlighted = { ...state.highlightedSquares };
     delete newHighlighted[square];
     return { highlightedSquares: newHighlighted };
   }),
   
-  clearAllHighlights: () => set({ highlightedSquares: {} })
+  clearAllHighlights: () => set({ highlightedSquares: {} }),
+  
+  // PDF Generator fonksiyonları
+  savePosition: (fen, isWhiteTurn) => set((state) => {
+    // Maksimum pozisyon sayısını kontrol et
+    if (state.savedPositions.length >= state.maxPositions) {
+      return state; // Değişiklik yapma
+    }
+    return {
+      savedPositions: [...state.savedPositions, { fen, isWhiteTurn }]
+    };
+  }),
+  
+  clearPositions: () => set({ savedPositions: [] }),
+  
+  removePosition: (index) => set((state) => ({
+    savedPositions: state.savedPositions.filter((_, i) => i !== index)
+  }))
 }));
 
 export default useChessStore;
