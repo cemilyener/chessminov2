@@ -1,53 +1,74 @@
 # ChessMino Projesi - Karşılaşılan Sorunlar ve Çözümler Listesi
 
-## Sorunlar
+## Mevcut Durum (Board Editor Geliştirme Aşaması)
+**Hedef:** 18 soruluk PGN setleri ile puzzle oluşturma ve JSON export
+**Kullanıcı Profili:** Okul öncesi çocuklar + Satranç öğretmenleri
 
-1. **Veri Yapısı Tutarsızlıkları**
-   - Puzzle JSON formatında standart eksikliği
-   - Varyant ağacı yönetiminde karmaşa
-   - Farklı dosyalarda farklı formatta veriler
+## GÜNCEL SORUNLAR
 
-2. **Chess.js Kütüphanesi Sınırlamaları**
-   - Şahsız konum oluşturma sorunu
-   - Özel hamle validasyonu zorlukları
-   - FEN manipülasyonu kısıtlamaları
+1. **Board Editor Form Uyumsuzluğu** 🔴 **ACİL**
+   - Form akıllı isimlendirme sistemine (001ka1) uygun değil
+   - Claude Opus'un yaptığı düzenlemeler eksik/yanlış
+   - Metadata girişi tam entegre edilmedi
 
-3. **Store Yönetimi Karmaşası**
-   - Benzer isimli store dosyaları
-   - Sorumluluk sınırları belirsiz utility'ler
-   - ChessVariantManager ve PuzzleVariantManager çakışmaları
+2. **Eksik Board Editor Özellikleri** 🔴 **ACİL**
+   - Varyant ekleme bölümü henüz kodlanmadı
+   - JSON export yeri yanlış konumlanmış
+   - 18 soruluk set yapısına uygun değil
 
-4. **Dosya Organizasyonu**
-   - Mantıksal gruplandırma eksikliği
-   - Büyüyen dosya sayısı ile artan karmaşa
-   - İlişkili bileşenlerin farklı klasörlerde olması
+3. **Klasör/Dosya Organizasyonu Karmaşası** 🟡 **SONRA**
+   - chess, common, editor, shared klasörleri birbirine karışmış
+   - Components isimlendirmesi belirsiz
+   - Utils vs Store ayrımı net değil
 
-5. **AI Etkileşim Sorunları**
-   - Sohbet token sınırlamaları
-   - Bağlam aktarımı zorlukları
-   - Yapay zeka önerilerindeki tutarsızlıklar
+4. **Git Yönetimi Deneyim Eksikliği** 🟡 **DİKKAT**
+   - 2 kez hata yapıp sıfırdan başlama durumu
+   - Branch stratejisi eksik
+   - Merge korkusu mevcut
 
-6. **Kod Büyüme Yönetimi**
-   - Bileşenlerin aşırı büyümesi
-   - Yeniden kullanılabilirlik eksikliği
-   - Kod tekrarları ve duplikasyonlar
+## ÇÖZÜLMÜŞ/İYİLEŞEN SORUNLAR
 
-7. **Belgeleme Eksiklikleri**
-   - İsimlendirme standartları belirsizliği
-   - Kod yorumlarının yetersizliği
-   - Mimari kararların dokümante edilmemesi
+5. **Store Yönetimi** ✅ **İYİLEŞTİ**
+   - 3. store yapılandırması sonraya ertelendi
+   - Mevcut yapı çalışır durumda
 
-8. **Test ve Hata Yakalama**
-   - Puzzle varyant mantığında keşfedilmeyen hatalar
-   - Kullanıcı arayüzü keşif zorluğu
-   - Veri geçerliliği kontrolü eksikliği
+6. **Performans Optimizasyonu** ✅ **BÜYÜK ORANDA ÇÖZÜLDÜ**
+   - useMemo, useCallback, hooks optimizasyonları yapıldı
+   - Küçük iyileştirmeler kaldı
 
-9. **Performans Sorunları**
-   - Büyük puzzle setlerinde yavaşlama
-   - Varyant ağacı render sorunları
-   - Gereksiz yeniden render'lar
+7. **Kod Büyüme Yönetimi** ✅ **KONTROL ALTINDA**
+   - Son aşamalarda düzenli hale getirilecek
+   - Çoğu sorun çözüldü
 
-10. **Git Yönetimi**
-    - Düzensiz commit yapısı
-    - Branch stratejisi eksikliği
-    - Merge konfliktleri
+## ERTELENMİŞ SORUNLAR
+
+8. **AI Etkileşim Test Stratejisi** ⏸️ **ERTELENDİ**
+   - Küçük parçalara ayrılmış test süreci
+   - Her işlem test edilecek yaklaşım benimsenecek
+
+9. **Belgeleme Güncellemesi** ⏸️ **ERTELENDİ**
+   - Sonraki aşamalar için yeniden düzenlenecek
+   - Akıllı isimlendirme sistemi dokümante edildi
+
+## ÖNCELİK SIRASI
+
+### 1. ACİL (Bu Sprint)
+- Board Editor formunu akıllı isimlendirmeye uyarla
+- Varyant ekleme bölümünü kodla
+- JSON export konumunu düzelt
+- 18 soruluk PGN set yapısını tamamla
+
+### 2. SONRAKI SPRINT
+- Hatalı soruları düzelt ve yeniden yükle
+- Yeni setler ekle
+- Git pratik çalışmaları yap
+
+### 3. UZUN VADELI
+- Klasör organizasyonunu düzenle
+- Store/Utils ayrımını netleştir
+- Belgelendirmeyi güncelle
+
+## PROJE VİZYONU HATIRLATMASI
+- **Ana Hedef:** Okul öncesi çocukların okuma-yazma bilgisi olmadan satranç öğrenmesi
+- **İkincil Hedef:** Öğretmenler için satranç öğretim aracı
+- **Kritik Nokta:** Şu anki Board Editor aşaması en zor kısım

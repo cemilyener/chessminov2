@@ -6,6 +6,7 @@ import LessonPage from "@/pages/LessonPage";
 import BoardEditorSetupPage from "@/pages/BoardEditorSetupPage";
 import BoardEditorDemoPage from "@/pages/BoardEditorDemoPage";
 import PgnConverterToolPage from "@/pages/PgnConverterToolPage";
+import PuzzleEditorPage from "@/pages/PuzzleEditorPage";
 import BasicBoardPage from "@/components/board/BasicBoardPage";
 // PDF Generator import
 import PawnlessArrangementPage from "@/pages/PawnlessArrangementPage";
@@ -20,6 +21,7 @@ function App() {
         <Route path="/puzzle" element={<PuzzlePage />} />
         <Route path="/lessons" element={<LessonPage />} />
         <Route path="/editor" element={<BoardEditorSetupPage />} />
+        <Route path="/puzzle-editor" element={<PuzzleEditorPage />} />
         <Route path="/pgn-converter" element={<PgnConverterToolPage />} />
         <Route path="/board-editor-demo" element={<BoardEditorDemoPage />} />
         <Route path="/basic-board" element={<BasicBoardPage />} />

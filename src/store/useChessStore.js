@@ -21,10 +21,13 @@ const useChessStore = create((set, get) => ({
     // BasicBoard için ekstra state'ler
   arrows: [], // Ok çizgileri - örnek format: [["a1", "a3", "blue"], ["h1", "h8", "red"]]
   highlightedSquares: {}, // Renkli kareler - örnek: { "e4": "blue", "d5": "red" }
-  
-  // PDF Generator için state'ler
+    // PDF Generator için state'ler
   savedPositions: [], // Kaydedilen pozisyonlar - format: { fen: string, isWhiteTurn: boolean }
   maxPositions: 6, // Maksimum kaydedilebilir pozisyon sayısı
+  
+  // Puzzle Editor için state'ler
+  selectedPuzzleSet: null, // Seçili puzzle seti
+  isPuzzleEditorMode: false, // Puzzle editor modunda mı
   
   // PGN yükleme işlemi
   loadPgnText: async (pgnText) => {
@@ -253,10 +256,75 @@ const useChessStore = create((set, get) => ({
   }),
   
   clearPositions: () => set({ savedPositions: [] }),
-  
-  removePosition: (index) => set((state) => ({
+    removePosition: (index) => set((state) => ({
     savedPositions: state.savedPositions.filter((_, i) => i !== index)
-  }))
+  })),
+  
+  // Puzzle Editor işlemleri
+  selectPuzzleSet: (setIndex) => set((state) => ({
+    selectedPuzzleSet: state.puzzleSets[setIndex] || null
+  })),
+  
+  createNewPuzzleSet: (metadata) => set((state) => ({
+    puzzleSets: [...state.puzzleSets, {
+      metadata: {
+        title: metadata.title || 'Yeni Puzzle Seti',
+        source: metadata.source || 'Manual',
+        count: 0
+      },
+      puzzles: []
+    }]
+  })),
+  
+  deletePuzzleSet: (setIndex) => set((state) => ({
+    puzzleSets: state.puzzleSets.filter((_, i) => i !== setIndex),
+    selectedPuzzleSet: state.selectedPuzzleSet === state.puzzleSets[setIndex] ? null : state.selectedPuzzleSet
+  })),
+  
+  updatePuzzleSetMetadata: (setIndex, metadata) => set((state) => {
+    const updatedSets = [...state.puzzleSets];
+    if (updatedSets[setIndex]) {
+      updatedSets[setIndex].metadata = { ...updatedSets[setIndex].metadata, ...metadata };
+    }
+    return { puzzleSets: updatedSets };
+  }),
+
+  // Puzzle CRUD işlemleri
+  addPuzzleToSet: (setIndex, puzzle) => set((state) => {
+    const updatedSets = [...state.puzzleSets];
+    if (updatedSets[setIndex]) {
+      const puzzleWithId = {
+        ...puzzle,
+        id: puzzle.id || `puzzle-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      };
+      updatedSets[setIndex].puzzles.push(puzzleWithId);
+      updatedSets[setIndex].metadata.count = updatedSets[setIndex].puzzles.length;
+    }
+    return { puzzleSets: updatedSets };
+  }),
+
+  updatePuzzle: (setIndex, puzzleId, updatedPuzzle) => set((state) => {
+    const updatedSets = [...state.puzzleSets];
+    if (updatedSets[setIndex]) {
+      const puzzleIndex = updatedSets[setIndex].puzzles.findIndex(p => p.id === puzzleId);
+      if (puzzleIndex !== -1) {
+        updatedSets[setIndex].puzzles[puzzleIndex] = { ...updatedPuzzle, id: puzzleId };
+      }
+    }
+    return { puzzleSets: updatedSets };
+  }),
+
+  deletePuzzle: (setIndex, puzzleId) => set((state) => {
+    const updatedSets = [...state.puzzleSets];
+    if (updatedSets[setIndex]) {
+      updatedSets[setIndex].puzzles = updatedSets[setIndex].puzzles.filter(p => p.id !== puzzleId);
+      updatedSets[setIndex].metadata.count = updatedSets[setIndex].puzzles.length;
+    }
+    return { puzzleSets: updatedSets };
+  }),
+
+  // Puzzle set yönetimi
+  setPuzzleEditorMode: (isActive) => set({ isPuzzleEditorMode: isActive })
 }));
 
 export default useChessStore;

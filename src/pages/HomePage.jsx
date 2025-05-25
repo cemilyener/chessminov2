@@ -61,8 +61,7 @@ const HomePage = () => {
               <h3 className="text-xl font-semibold text-amber-800 mb-3">Dersler</h3>
               <p className="text-gray-600 mb-4">Adım adım rehberli derslerle satranç öğrenin.</p>
               <span className="mt-2 inline-block text-amber-700 font-medium">Derslere Başla</span>
-            </Link>
-            {/* PDF Oluşturucu Kart */}
+            </Link>            {/* PDF Oluşturucu Kart */}
             <Link to="/pdf-generator" className="bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow text-center">
               <div className="bg-green-100 inline-block p-4 rounded-full mb-4">
                 <FaFilePdf className="h-10 w-10 text-green-600" />
@@ -70,6 +69,18 @@ const HomePage = () => {
               <h3 className="text-xl font-semibold text-green-800 mb-3">PDF Ödev Oluşturucu</h3>
               <p className="text-gray-600 mb-4">Özelleştirilmiş satranç çalışma sayfaları oluşturun</p>
               <span className="mt-2 inline-block text-green-700 font-medium">PDF Oluştur</span>
+            </Link>
+
+            {/* Puzzle Editor Kart */}
+            <Link to="/puzzle-editor" className="bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow text-center">
+              <div className="bg-orange-100 inline-block p-4 rounded-full mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-semibold text-orange-800 mb-3">Puzzle Editor</h3>
+              <p className="text-gray-600 mb-4">Kendi puzzle setlerinizi oluşturun ve düzenleyin</p>
+              <span className="mt-2 inline-block text-orange-700 font-medium">Editor'e Git</span>
             </Link>
          
             {/* BoardEditor Kart */}

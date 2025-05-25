@@ -1,0 +1,23 @@
+[Event "Sample Puzzle Set"]
+[Site "Manual"]
+[Date "2025.05.24"]
+[Round "1"]
+[White "Puzzle"]
+[Black "Solution"]
+[Result "1-0"]
+[FEN "rnbqkb1r/pppp1ppp/5n2/4p3/2B1P3/8/PPPP1PPP/RNBQK1NR w KQkq - 2 3"]
+[SetUp "1"]
+
+1. Qh5 Nxh5 2. Bxf7# 1-0
+
+[Event "Sample Puzzle Set"]
+[Site "Manual"]
+[Date "2025.05.24"]
+[Round "2"]
+[White "Puzzle"]
+[Black "Solution"]
+[Result "1-0"]
+[FEN "r1bqkb1r/pppp1ppp/2n2n2/4p3/2B1P3/3P1N2/PPP2PPP/RNBQK2R w KQkq - 4 4"]
+[SetUp "1"]
+
+1. Ng5 d6 2. Nxf7 Kxf7 3. Qh5+ 1-0
