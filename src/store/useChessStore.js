@@ -3,6 +3,7 @@ import { create } from 'zustand';
 import ChessContentManager from '../utils/chess/ChessContentManager';
 import { Chess } from 'chess.js';
 import { ExtendedChess } from '../utils/chess/ExtendedChess.js';
+import SmartNamingDecoder from '../utils/smartNaming/SmartNamingDecoder';
 
 // ChessContentManager örneği oluştur
 const manager = new ChessContentManager();
@@ -18,16 +19,18 @@ const useChessStore = create((set, get) => ({
   history: [],
   isLoading: false,
   error: null,
-    // BasicBoard için ekstra state'ler
-  arrows: [], // Ok çizgileri - örnek format: [["a1", "a3", "blue"], ["h1", "h8", "red"]]
-  highlightedSquares: {}, // Renkli kareler - örnek: { "e4": "blue", "d5": "red" }
-    // PDF Generator için state'ler
-  savedPositions: [], // Kaydedilen pozisyonlar - format: { fen: string, isWhiteTurn: boolean }
-  maxPositions: 6, // Maksimum kaydedilebilir pozisyon sayısı
+  
+  // BasicBoard için ekstra state'ler
+  arrows: [], 
+  highlightedSquares: {}, 
+  
+  // PDF Generator için state'ler
+  savedPositions: [], 
+  maxPositions: 6, 
   
   // Puzzle Editor için state'ler
-  selectedPuzzleSet: null, // Seçili puzzle seti
-  isPuzzleEditorMode: false, // Puzzle editor modunda mı
+  selectedPuzzleSet: null, 
+  isPuzzleEditorMode: false, 
   
   // PGN yükleme işlemi
   loadPgnText: async (pgnText) => {
@@ -42,19 +45,46 @@ const useChessStore = create((set, get) => ({
         // JSON çıktısını al
         const exportedData = manager.export();
         
-        // Ana hat ve varyantları debug et
-        console.log('Export sonucu:', exportedData);
-        if (exportedData.puzzles && exportedData.puzzles.length > 0) {
-          console.log('İlk puzzle varyantları:', exportedData.puzzles[0].variations);
-        }
+        // Export edilen puzzle'lara akıllı isimlendirme ekle
+        const enhancedPuzzles = exportedData.puzzles.map((puzzle, index) => {
+          // Varsayılan smart code oluştur (001ka1 formatında)
+          const defaultSmartCode = SmartNamingDecoder.encode(
+            index + 1, // set numarası
+            'k', // varsayılan kale
+            'a', // varsayılan alma
+            '1'  // varsayılan kolay
+          );
+          
+          return {
+            ...puzzle,
+            smartCode: defaultSmartCode,
+            pieceSet: 'merida',
+            metadata: {
+              ...puzzle.metadata,
+              smartCode: defaultSmartCode,
+              decodedData: SmartNamingDecoder.decode(defaultSmartCode),
+              pieceSet: 'merida',
+              customTitle: false,
+              customDescription: false,
+              lastModified: new Date().toISOString()
+            }
+          };
+        });
+        
+        const enhancedData = {
+          ...exportedData,
+          puzzles: enhancedPuzzles
+        };
+        
+        console.log('Enhanced export sonucu:', enhancedData);
         
         // Store state'i güncelle
         set({ 
-          puzzleSets: [exportedData],
+          puzzleSets: [enhancedData],
           currentSetIndex: 0,
           currentFen: manager.getCurrentFen(),
           currentNodeId: 'root',
-          variations: exportedData.puzzles[0]?.variations || [],
+          variations: enhancedData.puzzles[0]?.variations || [],
           alternatives: [],
           isLoading: false
         });
@@ -87,7 +117,7 @@ const useChessStore = create((set, get) => ({
     }
   },
   
-  // JSON dışa aktarma
+  // JSON dışa aktarma - Enhanced metadata ile
   exportAsJson: (setIndex = 0) => {
     const { puzzleSets } = get();
     
@@ -97,8 +127,28 @@ const useChessStore = create((set, get) => ({
     }
     
     const puzzleSet = puzzleSets[setIndex];
-    console.log('JSON dışa aktarımı:', puzzleSet);
-    return puzzleSet;
+    
+    // Export sırasında akıllı isimlendirme bilgilerini koruyalım
+    const enhancedPuzzleSet = {
+      ...puzzleSet,
+      metadata: {
+        ...puzzleSet.metadata,
+        exportDate: new Date().toISOString(),
+        smartNamingVersion: '1.0'
+      },
+      puzzles: puzzleSet.puzzles.map(puzzle => ({
+        ...puzzle,
+        metadata: {
+          ...puzzle.metadata,
+          smartCode: puzzle.smartCode,
+          pieceSet: puzzle.pieceSet || 'merida',
+          decodedData: puzzle.metadata?.decodedData
+        }
+      }))
+    };
+    
+    console.log('Enhanced JSON dışa aktarımı:', enhancedPuzzleSet);
+    return enhancedPuzzleSet;
   },
   
   // JSON dosyası olarak indirme
@@ -111,9 +161,14 @@ const useChessStore = create((set, get) => ({
     const blob = new Blob([json], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     
+    // Dosya adını akıllı isimlendirmeye göre oluştur
+    const firstPuzzle = puzzleSet.puzzles[0];
+    const smartCode = firstPuzzle?.smartCode || 'unknown';
+    const fileName = `chessmino-set-${smartCode}-${new Date().toISOString().split('T')[0]}.json`;
+    
     const a = document.createElement('a');
     a.href = url;
-    a.download = `chess-puzzle-set-${setIndex + 1}.json`;
+    a.download = fileName;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -236,7 +291,8 @@ const useChessStore = create((set, get) => ({
       [square]: color 
     }
   })),
-    clearHighlightedSquare: (square) => set(state => {
+  
+  clearHighlightedSquare: (square) => set(state => {
     const newHighlighted = { ...state.highlightedSquares };
     delete newHighlighted[square];
     return { highlightedSquares: newHighlighted };
@@ -256,7 +312,8 @@ const useChessStore = create((set, get) => ({
   }),
   
   clearPositions: () => set({ savedPositions: [] }),
-    removePosition: (index) => set((state) => ({
+  
+  removePosition: (index) => set((state) => ({
     savedPositions: state.savedPositions.filter((_, i) => i !== index)
   })),
   
@@ -265,16 +322,22 @@ const useChessStore = create((set, get) => ({
     selectedPuzzleSet: state.puzzleSets[setIndex] || null
   })),
   
-  createNewPuzzleSet: (metadata) => set((state) => ({
-    puzzleSets: [...state.puzzleSets, {
+  createNewPuzzleSet: (metadata) => set((state) => {
+    const newSet = {
       metadata: {
         title: metadata.title || 'Yeni Puzzle Seti',
         source: metadata.source || 'Manual',
-        count: 0
+        count: 0,
+        smartNamingVersion: '1.0',
+        createdDate: new Date().toISOString()
       },
       puzzles: []
-    }]
-  })),
+    };
+    
+    return {
+      puzzleSets: [...state.puzzleSets, newSet]
+    };
+  }),
   
   deletePuzzleSet: (setIndex) => set((state) => ({
     puzzleSets: state.puzzleSets.filter((_, i) => i !== setIndex),
@@ -284,33 +347,76 @@ const useChessStore = create((set, get) => ({
   updatePuzzleSetMetadata: (setIndex, metadata) => set((state) => {
     const updatedSets = [...state.puzzleSets];
     if (updatedSets[setIndex]) {
-      updatedSets[setIndex].metadata = { ...updatedSets[setIndex].metadata, ...metadata };
+      updatedSets[setIndex].metadata = { 
+        ...updatedSets[setIndex].metadata, 
+        ...metadata,
+        lastModified: new Date().toISOString()
+      };
     }
     return { puzzleSets: updatedSets };
   }),
 
-  // Puzzle CRUD işlemleri
-  addPuzzleToSet: (setIndex, puzzle) => set((state) => {
+  // Enhanced Puzzle CRUD işlemleri
+  addPuzzleToSet: (setIndex, puzzleData) => set((state) => {
     const updatedSets = [...state.puzzleSets];
+    
     if (updatedSets[setIndex]) {
+      // Smart code varsa decode et
+      let decodedData = null;
+      if (puzzleData.smartCode) {
+        decodedData = SmartNamingDecoder.decode(puzzleData.smartCode);
+      }
+      
       const puzzleWithId = {
-        ...puzzle,
-        id: puzzle.id || `puzzle-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+        ...puzzleData,
+        id: puzzleData.id || `puzzle-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        metadata: {
+          ...puzzleData.metadata,
+          smartCode: puzzleData.smartCode,
+          decodedData,
+          pieceSet: puzzleData.pieceSet || 'merida',
+          createdDate: new Date().toISOString()
+        }
       };
+      
       updatedSets[setIndex].puzzles.push(puzzleWithId);
       updatedSets[setIndex].metadata.count = updatedSets[setIndex].puzzles.length;
+      updatedSets[setIndex].metadata.lastModified = new Date().toISOString();
     }
+    
     return { puzzleSets: updatedSets };
   }),
 
-  updatePuzzle: (setIndex, puzzleId, updatedPuzzle) => set((state) => {
+  updatePuzzle: (setIndex, puzzleId, updatedPuzzleData) => set((state) => {
     const updatedSets = [...state.puzzleSets];
+    
     if (updatedSets[setIndex]) {
       const puzzleIndex = updatedSets[setIndex].puzzles.findIndex(p => p.id === puzzleId);
+      
       if (puzzleIndex !== -1) {
-        updatedSets[setIndex].puzzles[puzzleIndex] = { ...updatedPuzzle, id: puzzleId };
+        // Smart code varsa decode et
+        let decodedData = null;
+        if (updatedPuzzleData.smartCode) {
+          decodedData = SmartNamingDecoder.decode(updatedPuzzleData.smartCode);
+        }
+        
+        const updatedPuzzle = {
+          ...updatedPuzzleData,
+          id: puzzleId,
+          metadata: {
+            ...updatedPuzzleData.metadata,
+            smartCode: updatedPuzzleData.smartCode,
+            decodedData,
+            pieceSet: updatedPuzzleData.pieceSet || 'merida',
+            lastModified: new Date().toISOString()
+          }
+        };
+        
+        updatedSets[setIndex].puzzles[puzzleIndex] = updatedPuzzle;
+        updatedSets[setIndex].metadata.lastModified = new Date().toISOString();
       }
     }
+    
     return { puzzleSets: updatedSets };
   }),
 
@@ -319,12 +425,26 @@ const useChessStore = create((set, get) => ({
     if (updatedSets[setIndex]) {
       updatedSets[setIndex].puzzles = updatedSets[setIndex].puzzles.filter(p => p.id !== puzzleId);
       updatedSets[setIndex].metadata.count = updatedSets[setIndex].puzzles.length;
+      updatedSets[setIndex].metadata.lastModified = new Date().toISOString();
     }
     return { puzzleSets: updatedSets };
   }),
 
   // Puzzle set yönetimi
-  setPuzzleEditorMode: (isActive) => set({ isPuzzleEditorMode: isActive })
+  setPuzzleEditorMode: (isActive) => set({ isPuzzleEditorMode: isActive }),
+  
+  // Smart naming helper methods
+  validateSmartCode: (code) => {
+    return SmartNamingDecoder.validateCode(code);
+  },
+  
+  decodeSmartCode: (code) => {
+    return SmartNamingDecoder.decode(code);
+  },
+  
+  getSmartNamingOptions: () => {
+    return SmartNamingDecoder.getAllOptions();
+  }
 }));
 
 export default useChessStore;
