@@ -1,5 +1,5 @@
-import { Link } from 'react-router-dom';
-import { FaFilePdf } from 'react-icons/fa';
+import { Link } from "react-router-dom";
+import { FaFilePdf } from "react-icons/fa";
 
 const HomePage = () => {
   return (
@@ -19,7 +19,8 @@ const HomePage = () => {
             Satranç Öğrenmenin Kolay Yolu
           </h2>
           <p className="text-lg text-gray-700 mb-8 max-w-2xl mx-auto">
-            ChessMino, 3-8 yaş arası çocuklara satranç öğreten interaktif ve eğlenceli bir platformdur.
+            ChessMino, 3-8 yaş arası çocuklara satranç öğreten interaktif ve
+            eğlenceli bir platformdur.
           </p>
         </div>
       </section>
@@ -28,98 +29,226 @@ const HomePage = () => {
         <div className="container mx-auto max-w-5xl">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* Puzzle Kart */}
-            <Link to="/puzzle" className="bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow text-center">
+            <Link
+              to="/puzzle"
+              className="bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow text-center"
+            >
               <div className="bg-purple-100 inline-block p-4 rounded-full mb-4">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z" />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-10 w-10 text-purple-600"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z"
+                  />
                 </svg>
               </div>
-              <h3 className="text-xl font-semibold text-purple-800 mb-3">Puzzle</h3>
-              <p className="text-gray-600 mb-4">Eğlenceli satranç bulmacaları çözerek becerilerinizi geliştirin.</p>
-              <span className="mt-2 inline-block text-purple-700 font-medium">Puzzle Çöz</span>
+              <h3 className="text-xl font-semibold text-purple-800 mb-3">
+                Puzzle
+              </h3>
+              <p className="text-gray-600 mb-4">
+                Eğlenceli satranç bulmacaları çözerek becerilerinizi geliştirin.
+              </p>
+              <span className="mt-2 inline-block text-purple-700 font-medium">
+                Puzzle Çöz
+              </span>
             </Link>
             {/* Tahta Kart */}
-            <Link to="/board-editor-demo" className="bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow text-center">
+            <Link
+              to="/teacher-board" // ✅ Route değişti
+              className="bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow text-center"
+            >
               <div className="bg-blue-100 inline-block p-4 rounded-full mb-4">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-10 w-10 text-blue-600"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"
+                  />
                 </svg>
               </div>
-              <h3 className="text-xl font-semibold text-blue-800 mb-3">Tahta</h3>
-              <p className="text-gray-600 mb-4">İnteraktif tahtada hamleleri ve varyantları deneyin.</p>
-              <span className="mt-2 inline-block text-blue-700 font-medium">Tahtaya Git</span>
+              <h3 className="text-xl font-semibold text-blue-800 mb-3">
+                Öğretmen Tahtası {/* ✅ Başlık değişti */}
+              </h3>
+              <p className="text-gray-600 mb-4">
+                Satranç pozisyonları oluşturun ve analiz edin. Öğretmenlere özel araçlar. {/* ✅ Açıklama değişti */}
+              </p>
+              <span className="mt-2 inline-block text-blue-700 font-medium">
+                Tahtaya Git
+              </span>
             </Link>
             {/* Dersler Kart */}
-            <Link to="/lessons" className="bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow text-center">
+            <Link
+              to="/lessons"
+              className="bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow text-center"
+            >
               <div className="bg-amber-100 inline-block p-4 rounded-full mb-4">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-10 w-10 text-amber-600"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
                   <path d="M12 14l9-5-9-5-9 5 9 5z" />
                   <path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998a12.078 12.078 0 01.665-6.479L12 14z" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998a12.078 12.078 0 01.665-6.479L12 14z"
+                  />
                 </svg>
               </div>
-              <h3 className="text-xl font-semibold text-amber-800 mb-3">Dersler</h3>
-              <p className="text-gray-600 mb-4">Adım adım rehberli derslerle satranç öğrenin.</p>
-              <span className="mt-2 inline-block text-amber-700 font-medium">Derslere Başla</span>
-            </Link>            {/* PDF Oluşturucu Kart */}
-            <Link to="/pdf-generator" className="bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow text-center">
+              <h3 className="text-xl font-semibold text-amber-800 mb-3">
+                Dersler
+              </h3>
+              <p className="text-gray-600 mb-4">
+                Adım adım rehberli derslerle satranç öğrenin.
+              </p>
+              <span className="mt-2 inline-block text-amber-700 font-medium">
+                Derslere Başla
+              </span>
+            </Link>{" "}
+            {/* PDF Oluşturucu Kart */}
+            <Link
+              to="/pdf-generator"
+              className="bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow text-center"
+            >
               <div className="bg-green-100 inline-block p-4 rounded-full mb-4">
                 <FaFilePdf className="h-10 w-10 text-green-600" />
               </div>
-              <h3 className="text-xl font-semibold text-green-800 mb-3">PDF Ödev Oluşturucu</h3>
-              <p className="text-gray-600 mb-4">Özelleştirilmiş satranç çalışma sayfaları oluşturun</p>
-              <span className="mt-2 inline-block text-green-700 font-medium">PDF Oluştur</span>
-            </Link>
-
-            {/* Puzzle Editor Kart */}
-            <Link to="/puzzle-editor" className="bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow text-center">
-              <div className="bg-orange-100 inline-block p-4 rounded-full mb-4">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-semibold text-orange-800 mb-3">Puzzle Editor</h3>
-              <p className="text-gray-600 mb-4">Kendi puzzle setlerinizi oluşturun ve düzenleyin</p>
-              <span className="mt-2 inline-block text-orange-700 font-medium">Editor'e Git</span>
-            </Link>
-         
-            {/* BoardEditor Kart */}
-            <Link to="/editor" className="md:col-span-2 lg:col-span-3 bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow">
-              <div className="flex flex-col md:flex-row items-center">
-                <div className="mb-4 md:mb-0 md:mr-6">
-                  <div className="bg-emerald-100 inline-block p-4 rounded-full">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                    </svg>
-                  </div>
-                </div>
-                <div className="text-center md:text-left flex-1">
-                  <h3 className="text-xl font-semibold text-emerald-800 mb-3">Tahta Editörü</h3>
-                  <p className="text-gray-600 mb-4">Kendi satranç pozisyonlarınızı oluşturun, PGN dosyalarını yükleyin ve düzenleyin.</p>
-                  <span className="mt-2 inline-block text-emerald-700 font-medium">Editöre Git</span>
-                </div>
-              </div>
+              <h3 className="text-xl font-semibold text-green-800 mb-3">
+                PDF Ödev Oluşturucu
+              </h3>
+              <p className="text-gray-600 mb-4">
+                Özelleştirilmiş satranç çalışma sayfaları oluşturun
+              </p>
+              <span className="mt-2 inline-block text-green-700 font-medium">
+                PDF Oluştur
+              </span>
             </Link>
             {/* PGN Dönüştürücü Kart */}
-            <Link to="/pgn-converter" className="bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow text-center">
+            <Link
+              to="/pgn-converter"
+              className="bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow text-center"
+            >
               <div className="bg-indigo-100 inline-block p-4 rounded-full mb-4">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7" />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-10 w-10 text-indigo-600"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7"
+                  />
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold mb-2">PGN Dönüştürücü</h3>
-              <p className="text-gray-600">PGN dosyalarını sisteminize uygun formatlara dönüştürün</p>
+              <h3 className="text-xl font-semibold text-indigo-800 mb-3">PGN Dönüştürücü</h3>
+              <p className="text-gray-600 mb-4">
+                PGN dosyalarını sisteminize uygun formatlara dönüştürün
+              </p>
+              <span className="mt-2 inline-block text-indigo-700 font-medium">
+                Dönüştür
+              </span>
             </Link>
             {/* Basic Board Page Kart */}
-            <Link to="/basic-board" className="bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow text-center">
+            <Link
+              to="/basic-board"
+              className="bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow text-center"
+            >
               <div className="bg-gray-100 inline-block p-4 rounded-full mb-4">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M19 3v4m-2-2h4M5 19v-4m-2 2h4m14 0v-4m-2 2h4M7 7h10v10H7V7z" />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-10 w-10 text-gray-600"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 3v4M3 5h4M19 3v4m-2-2h4M5 19v-4m-2 2h4m14 0v-4m-2 2h4M7 7h10v10H7V7z"
+                  />
                 </svg>
               </div>
-              <h3 className="text-xl font-semibold text-gray-800 mb-3">Basic Board</h3>
-              <p className="text-gray-600 mb-4">Temel satranç tahtası özelliklerini keşfedin.</p>
-              <span className="mt-2 inline-block text-gray-700 font-medium">Tahtayı İncele</span>
+              <h3 className="text-xl font-semibold text-gray-800 mb-3">
+                Basic Board
+              </h3>
+              <p className="text-gray-600 mb-4">
+                Temel satranç tahtası özelliklerini keşfedin.
+              </p>
+              <span className="mt-2 inline-block text-gray-700 font-medium">
+                Tahtayı İncele
+              </span>
+            </Link>
+            {/* Basit Puzzle Oluşturucu Kart */}
+            <Link
+              to="/simple-puzzle-creator"
+              className="bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow text-center"
+            >
+              <div className="bg-teal-100 inline-block p-4 rounded-full mb-4">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-10 w-10 text-teal-600"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4"
+                  />
+                </svg>
+              </div>
+              <h3 className="text-xl font-semibold text-teal-800 mb-3">
+                Basit Puzzle Oluşturucu
+              </h3>
+              <p className="text-gray-600 mb-4">
+                Hızlı ve kolay puzzle seti oluşturun
+              </p>
+              <span className="mt-2 inline-block text-teal-700 font-medium">
+                Hemen Başla
+              </span>
+            </Link>
+            {/* Homework Generator Kart - ✅ Güncellendi */}
+            <Link
+              to="/homework-generator" // ✅ Route değişti
+              className="bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow text-center"
+            >
+              <div className="bg-green-100 inline-block p-4 rounded-full mb-4">
+                <FaFilePdf className="h-10 w-10 text-green-600" />
+              </div>
+              <h3 className="text-xl font-semibold text-green-800 mb-3">
+                Homework Generator {/* ✅ Başlık değişti */}
+              </h3>
+              <p className="text-gray-600 mb-4">
+                Create customized chess homework worksheets for students {/* ✅ Açıklama değişti */}
+              </p>
+              <span className="mt-2 inline-block text-green-700 font-medium">
+                Create Homework
+              </span>
             </Link>
           </div>
         </div>
@@ -127,7 +256,9 @@ const HomePage = () => {
       {/* Basit Footer */}
       <footer className="bg-gray-800 text-gray-300 py-6 px-4 mt-12">
         <div className="container mx-auto max-w-5xl text-center">
-          <p className="text-gray-500">&copy; {new Date().getFullYear()} ChessMino. Tüm hakları saklıdır.</p>
+          <p className="text-gray-500">
+            &copy; {new Date().getFullYear()} ChessMino. Tüm hakları saklıdır.
+          </p>
         </div>
       </footer>
     </div>

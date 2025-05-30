@@ -1,17 +1,48 @@
 /**
  * ChessMino Akıllı İsimlendirme Sistemi Decoder
+ * 
+ * Format: AAABCD
+ * AAA: Set numarası (001-999)
+ * B: Taş/konu türü (k:kale, f:fil, v:vezir, s:şah, p:piyon, a:at)
+ * C: Egzersiz tipi (a:alma, i:isteme, b:bedava, c:canavar, s:serbest)
+ * D: Zorluk seviyesi (1:kolay, 2:orta, 3:zor)
  */
 
-// Schema'dan import et - DUP LİKASYON KALDIR
-import { 
-  PIECE_TYPES, 
-  EXERCISE_TYPES, 
-  DIFFICULTY_LEVELS, 
-  PIECE_SETS,
-  validateSetId,
-  generateTitle as schemaGenerateTitle,
-  generateNextSetId as schemaGenerateNextSetId
-} from '@/schemas/puzzleSetSchema';
+// Taş türleri mapping
+export const PIECE_TYPES = {
+  'k': { name: 'Kale', englishName: 'Rook' },
+  'f': { name: 'Fil', englishName: 'Bishop' },
+  'v': { name: 'Vezir', englishName: 'Queen' },
+  's': { name: 'Şah', englishName: 'King' },
+  'p': { name: 'Piyon', englishName: 'Pawn' },
+  'a': { name: 'At', englishName: 'Knight' }
+};
+
+// Egzersiz tipleri mapping
+export const EXERCISE_TYPES = {
+  'a': { name: 'Alma', description: 'Taş alma egzersizleri' },
+  'i': { name: 'İsteme', description: 'Taş isteme egzersizleri' },
+  'b': { name: 'Bedava', description: 'Bedava taş egzersizleri' },
+  'c': { name: 'Canavar', description: 'Canavar (tehdit) egzersizleri' },
+  's': { name: 'Serbest', description: 'Serbest stil egzersizleri' }
+};
+
+// Zorluk seviyeleri
+export const DIFFICULTY_LEVELS = {
+  '1': { name: 'Kolay', color: 'green', description: 'Yeni başlayanlar için' },
+  '2': { name: 'Orta', color: 'yellow', description: 'Orta seviye oyuncular için' },
+  '3': { name: 'Zor', color: 'red', description: 'İleri seviye oyuncular için' }
+};
+
+// Taş setleri
+export const PIECE_SETS = {
+  'merida': { name: 'Merida', isDefault: true },
+  'lucide': { name: 'Lucide', isDefault: false },
+  'berlin': { name: 'Berlin', isDefault: false },
+  'sahgizli': { name: 'Şahgizli', isDefault: false },
+  'piyondag': { name: 'Piyondağ', isDefault: false },
+  'atkupa': { name: 'Atkupa', isDefault: false }
+};
 
 /**
  * Akıllı kod decoder sınıfı
@@ -159,13 +190,23 @@ export class SmartNamingDecoder {
    * Kod real-time validation
    */
   static validateCode(code) {
-    return validateSetId(code);
+    if (!code) return { isValid: true, message: '' };
+    
+    if (code.length > 6) {
+      return { isValid: false, message: 'Kod en fazla 6 karakter olabilir' };
+    }
+    
+    if (code.length < 6) {
+      return { isValid: true, message: `${6 - code.length} karakter daha gerekli` };
+    }
+    
+    const decoded = this.decode(code);
+    if (!decoded.isValid) {
+      return { isValid: false, message: 'Geçersiz kod formatı' };
+    }
+    
+    return { isValid: true, message: 'Geçerli kod ✓' };
   }
 }
-
-// Schema fonksiyonlarını export et
-export const generateTitle = schemaGenerateTitle;
-export const generateNextSetId = schemaGenerateNextSetId;
-export { validateSetId };
 
 export default SmartNamingDecoder;

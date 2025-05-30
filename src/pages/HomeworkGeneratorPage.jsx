@@ -4,7 +4,7 @@ import ChessboardComponent from "../components/ChessboardComponent";
 import useChessStore from "../store/useChessStore";
 import { generatePDF } from "../utils/pdfGenerator";
 
-function PawnlessArrangementPage() {
+function HomeworkGeneratorPage() {
   const [currentPosition, setCurrentPosition] = useState(null);
   const savedPositions = useChessStore((state) => state.savedPositions);
   const savePosition = useChessStore((state) => state.savePosition);
@@ -45,6 +45,14 @@ function PawnlessArrangementPage() {
 
   return (
     <div className="h-full bg-amber-50 flex flex-col overflow-hidden">
+      {/* Sayfa Header'ı ekle */}
+      <div className="bg-white border-b border-gray-200 p-4">
+        <h1 className="text-2xl font-bold text-amber-800">📝 Homework Generator</h1>
+        <p className="text-gray-600 text-sm mt-1">
+          Create custom chess homework worksheets for students
+        </p>
+      </div>
+
       <div className="flex-1 grid grid-cols-12 gap-2 p-2">
         <div className="col-span-12 sm:col-span-8 md:col-span-9 bg-white rounded-md shadow-md flex flex-col overflow-hidden">
           <div className="flex justify-start items-center p-2 border-b border-amber-100">
@@ -110,7 +118,7 @@ function PawnlessArrangementPage() {
               className="w-full p-1 text-sm border border-amber-200 rounded"
             />
           </div>
-            <div className="flex-1 flex items-center justify-center p-2">
+          <div className="flex-1 flex items-center justify-center p-2">
             <div className="w-full max-w-md">
               <ChessboardComponent
                 onChange={handlePositionChange}
@@ -188,10 +196,11 @@ function PawnlessArrangementPage() {
                 />
               </div>
             </div>
-          ))}        </div>
+          ))}        
+        </div>
       </div>
     </div>
   );
 }
 
-export default PawnlessArrangementPage;
+export default HomeworkGeneratorPage;

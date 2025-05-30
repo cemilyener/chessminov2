@@ -54,7 +54,7 @@ ChessMino projesinde puzzle setleri için kullanılan ID formatı:
 
 ---
 
-## Öğretim Sırası
+## Öğretim Sırası bu derlerinde sırası 
 
 1. Tahta
 2. Kale
