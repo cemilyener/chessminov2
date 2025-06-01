@@ -6,7 +6,9 @@ import MetadataStep from '@/components/puzzleCreator/MetadataStep';
 import PuzzleCreationStep from '@/components/puzzleCreator/PuzzleCreationStep';
 import SmartNamingDecoder from '@/utils/smartNaming/SmartNamingDecoder';
 
-const SimplePuzzleCreator = () => {  const [step, setStep] = useState(1);
+const SimplePuzzleCreator = () => {
+  const [step, setStep] = useState(1);
+  const [previewMode, setPreviewMode] = useState(false);
   const [puzzleSet, setPuzzleSet] = useState({
     id: '',
     pieceSet: 'merida',
@@ -30,6 +32,7 @@ const SimplePuzzleCreator = () => {  const [step, setStep] = useState(1);
       setStep(2);
     }
   };
+  
   const generateNextSetId = (currentId) => {
     if (!currentId || currentId.length < 6) return '';
     const num = parseInt(currentId.substring(0, 3)) + 1;
@@ -70,15 +73,90 @@ const SimplePuzzleCreator = () => {  const [step, setStep] = useState(1);
                 Basit Puzzle Oluşturucu
               </h1>
             </div>
-            <div className="text-sm text-gray-500">
-              Adım {step} / 3
+            <div className="flex items-center gap-4">
+              <div className="text-sm text-gray-500">
+                Adım {step} / 3
+              </div>
+              <button
+                onClick={() => setPreviewMode(!previewMode)}
+                className="text-sm px-3 py-1 bg-purple-100 text-purple-700 rounded hover:bg-purple-200 transition-colors flex items-center gap-1"
+              >
+                {previewMode ? '👁️ Preview Açık' : '👁️‍🗨️ Preview Kapalı'}
+              </button>
             </div>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <div className="container mx-auto px-4 py-6">        {step === 1 && (
+      <div className="container mx-auto px-4 py-6">
+        {/* Preview Panel */}
+        {previewMode && puzzleSet.puzzles.length > 0 && (
+          <div className="fixed right-4 top-20 w-80 bg-white shadow-lg rounded-lg p-4 max-h-[80vh] overflow-y-auto z-50 border border-gray-200">
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="font-bold text-gray-800">📋 Puzzle Preview</h3>
+              <button
+                onClick={() => setPreviewMode(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="space-y-3">
+              {puzzleSet.puzzles.map((puzzle, idx) => (
+                <div key={idx} className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="text-sm font-medium text-gray-800">
+                      Puzzle #{idx + 1}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      {puzzle.mainLine?.length || 0} hamle
+                    </div>
+                  </div>
+                  
+                  {/* FEN */}
+                  <div className="text-xs bg-white p-2 rounded mb-2 font-mono break-all">
+                    {puzzle.fen || puzzle.startingFen}
+                  </div>
+                  
+                  {/* Ana Hat */}
+                  <div className="text-xs">
+                    <span className="font-medium text-gray-700">Ana Hat:</span>
+                    <div className="mt-1 text-gray-600">
+                      {puzzle.mainLine?.slice(0, 5).map((move, i) => (
+                        <span key={i}>
+                          {typeof move === 'string' ? move : move.san || move.move} 
+                          {i < 4 && ' '}
+                        </span>
+                      ))}
+                      {puzzle.mainLine?.length > 5 && '...'}
+                    </div>
+                  </div>
+                  
+                  {/* Varyantlar */}
+                  {puzzle.alternatives?.length > 0 && (
+                    <div className="text-xs mt-2">
+                      <span className="font-medium text-purple-700">
+                        {puzzle.alternatives.length} varyant
+                      </span>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+            
+            <div className="mt-4 pt-3 border-t border-gray-200">
+              <div className="text-xs text-gray-600 space-y-1">
+                <div><strong>Set ID:</strong> {puzzleSet.id}</div>
+                <div><strong>Toplam:</strong> {puzzleSet.puzzles.length} puzzle</div>
+                <div><strong>Piece Set:</strong> {puzzleSet.pieceSet}</div>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {step === 1 && (
           <MetadataStep 
             puzzleSet={puzzleSet} 
             setPuzzleSet={setPuzzleSet}
@@ -87,7 +165,8 @@ const SimplePuzzleCreator = () => {  const [step, setStep] = useState(1);
             generateNextSetId={generateNextSetId}
           />
         )}
-          {step === 2 && (
+        
+        {step === 2 && (
           <PuzzleCreationStep 
             puzzleSet={puzzleSet} 
             setPuzzleSet={setPuzzleSet}
@@ -117,7 +196,8 @@ const ExportStep = ({ puzzleSet, onPrevious }) => {
     try {
       const chess = new Chess(startFen);
       
-      return moves.map((move, index) => {        try {
+      return moves.map((move, index) => {
+        try {
           const result = chess.move(move);
           
           if (!result) {
@@ -140,7 +220,8 @@ const ExportStep = ({ puzzleSet, onPrevious }) => {
             isLast: index === moves.length - 1
           };
         }
-      });    } catch {
+      });
+    } catch {
       return moves.map((move, index) => ({
         move: move,
         fen: startFen,
@@ -262,7 +343,8 @@ const ExportStep = ({ puzzleSet, onPrevious }) => {
             </div>
 
             <div className="bg-blue-50 p-4 rounded-lg">
-              <h3 className="font-medium mb-3 text-blue-800">🧩 Puzzle Detayları</h3>              <div className="space-y-2 text-sm">
+              <h3 className="font-medium mb-3 text-blue-800">🧩 Puzzle Detayları</h3>
+              <div className="space-y-2 text-sm">
                 {exportData.puzzles.map((puzzle) => (
                   <div key={puzzle.id} className="bg-white p-2 rounded border">
                     <div className="flex justify-between items-center">

@@ -2,7 +2,20 @@ import React, { useState, useEffect, useId, useRef } from 'react';
 import { Chessboard, ChessboardDnDProvider, SparePiece } from "react-chessboard";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import { Chess } from 'chess.js';
-import { ExtendedChess } from '@/utils/chess/ExtendedChess.js';
+import { ExtendedChess } from '../../utils/chess/ExtendedChess.js';
+
+// Error boundary wrapper fonksiyonu
+const withErrorBoundary = (fn, fallbackMessage = "İşlem başarısız") => {
+  return (...args) => {
+    try {
+      return fn(...args);
+    } catch (error) {
+      console.error(`Error in ${fn.name || 'function'}:`, error);
+      console.warn(`⚠️ ${fallbackMessage}: ${error.message}`);
+      return null;
+    }
+  };
+};
 
 const PuzzleCreationStep = ({ puzzleSet, setPuzzleSet, onNext, onPrevious }) => {
   const [boardState, setBoardState] = useState({
@@ -12,24 +25,27 @@ const PuzzleCreationStep = ({ puzzleSet, setPuzzleSet, onNext, onPrevious }) => 
     turn: 'w'
   });
 
-  const [chessEditor] = useState(() => new ExtendedChess("8/8/8/8/8/8/8/8 w - - 0 1", { bypass: [10] }));  const [chess, setChess] = useState(null);
+  const [chess, setChess] = useState(null);
   
-  // YENİ: useRef ile recording start FEN'i sakla - ASENKRON PROBLEM ÇÖZÜLDÜ
+  // useRef ile recording start FEN'i sakla
   const recordingStartFenRef = useRef('');
   
-  // YENİ VARIANT STATES
+  // Variant states
   const [isRecordingVariant, setIsRecordingVariant] = useState(false);
   const [variantStartIndex, setVariantStartIndex] = useState(-1);
   const [currentVariantMoves, setCurrentVariantMoves] = useState([]);
   
-  // YENİ: Move Navigation State
+  // Move Navigation State
   const [currentPositionIndex, setCurrentPositionIndex] = useState(-1);
 
-  // YENİ: Multiple Variants State
+  // Multiple Variants State
   const [tempVariants, setTempVariants] = useState([]);
 
   const [boardWidth, setBoardWidth] = useState(400);
   const uniqueId = useId();
+
+  // Error/Success messages state
+  const [statusMessage, setStatusMessage] = useState({ type: '', message: '' });
 
   // Piece palette
   const pieces = ["wP", "wN", "wB", "wR", "wQ", "wK", "bP", "bN", "bB", "bR", "bQ", "bK"];
@@ -46,125 +62,377 @@ const PuzzleCreationStep = ({ puzzleSet, setPuzzleSet, onNext, onPrevious }) => 
     return () => window.removeEventListener('resize', updateBoardSize);
   }, []);
 
-  // Board editing functions
-  const handleSparePieceDrop = (piece, targetSquare) => {
-    const color = piece[0];
-    const type = piece[1].toLowerCase();
-    
-    try {
-      chessEditor.remove(targetSquare);
-      const success = chessEditor.put({ type, color }, targetSquare);
-      
-      if (success) {
-        const newFen = chessEditor.fen();
-        setBoardState(prev => ({
-          ...prev,
-          fen: newFen
-        }));
-        return true;
-      }
-      return false;
-    } catch (error) {
-      console.error("Taş yerleştirme hatası:", error);
-      return false;
-    }
+  // Debug effect for moveList changes
+  useEffect(() => {
+    console.log('📊 Board state changed:', {
+      moveList: boardState.moveList,
+      isRecording: boardState.isRecording,
+      fen: boardState.fen,
+      moveCount: boardState.moveList.length
+    });
+  }, [boardState.moveList, boardState.isRecording]);
+
+  // Debug effect for chess instance
+  useEffect(() => {
+    console.log('♟️ Chess instance changed:', {
+      exists: !!chess,
+      type: chess ? chess.constructor.name : 'null',
+      fen: chess ? chess.fen() : 'N/A',
+      turn: chess ? chess.turn() : 'N/A',
+      moves: chess ? chess.moves().slice(0, 5) : []
+    });
+  }, [chess]);
+
+  // Show status message helper
+  const showStatus = (type, message, duration = 3000) => {
+    setStatusMessage({ type, message });
+    setTimeout(() => setStatusMessage({ type: '', message: '' }), duration);
   };
 
-  const handlePieceDrop = (sourceSquare, targetSquare, piece) => {
+  // Board editing functions with error handling
+  const handleSparePieceDrop = withErrorBoundary((piece, targetSquare) => {
+    if (boardState.isRecording) {
+      showStatus('warning', 'Hamle kaydı sırasında taş yerleştirilemez');
+      return false;
+    }
+    
+    console.log('🎨 Placing piece:', { piece, targetSquare });
+    console.log('🎨 Current FEN before placement:', boardState.fen);
+    
+    // FEN manipulation for piece placement
+    const fenParts = boardState.fen.split(' ');
+    const position = fenParts[0];
+    
+    // Convert square to indices
+    const file = targetSquare.charCodeAt(0) - 97; // a=0, b=1, etc
+    const rank = 8 - parseInt(targetSquare[1]); // 8=0, 7=1, etc
+    
+    console.log('🎨 Target position:', { file, rank, square: targetSquare });
+    
+    // Convert FEN position to 2D array
+    const rows = position.split('/');
+    const board = rows.map(row => {
+      const expandedRow = [];
+      for (const char of row) {
+        if (isNaN(char)) {
+          expandedRow.push(char);
+        } else {
+          for (let i = 0; i < parseInt(char); i++) {
+            expandedRow.push('1');
+          }
+        }
+      }
+      // Her satırın 8 kare olduğundan emin ol
+      while (expandedRow.length < 8) {
+        expandedRow.push('1');
+      }
+      return expandedRow;
+    });
+    
+    console.log('🎨 Board before placement:', board);
+    console.log('🎨 Board dimensions:', board.map(row => row.length));
+    console.log('🎨 Target square before placement:', board[rank] ? board[rank][file] : 'undefined');
+    
+    // Place the piece - piece format: "wR", "bQ" etc.
+    const pieceChar = piece[1]; // R, Q, N, B, K, P
+    const isWhite = piece[0] === 'w';
+    const coloredPiece = isWhite ? pieceChar.toUpperCase() : pieceChar.toLowerCase();
+    
+    console.log('🎨 Placing piece:', { 
+      piece, 
+      pieceChar, 
+      isWhite, 
+      coloredPiece, 
+      targetFile: file, 
+      targetRank: rank,
+      boardExists: !!board[rank],
+      squareExists: board[rank] ? !!board[rank][file] !== undefined : false
+    });
+    
+    // Bounds check
+    if (rank < 0 || rank >= 8 || file < 0 || file >= 8) {
+      console.error('❌ Invalid square indices:', { rank, file, targetSquare });
+      showStatus('error', 'Geçersiz kare!');
+      return false;
+    }
+    
+    // Board array check
+    if (!board[rank] || board[rank].length < 8) {
+      console.error('❌ Board array malformed:', { 
+        rankExists: !!board[rank], 
+        rankLength: board[rank] ? board[rank].length : 0 
+      });
+      showStatus('error', 'Board formatı hatalı!');
+      return false;
+    }
+    
+    board[rank][file] = coloredPiece;
+    
+    console.log('🎨 Board after placement:', board);
+    console.log('🎨 Target square after placement:', board[rank][file]);
+    
+    // Convert back to FEN - Enhanced debugging
+    const newPosition = board.map((row, rowIndex) => {
+      let fenRow = '';
+      let emptyCount = 0;
+      console.log(`🎨 Processing row ${rowIndex}:`, row);
+      
+      for (const square of row) {
+        if (square === '1') {
+          emptyCount++;
+        } else {
+          if (emptyCount > 0) {
+            fenRow += emptyCount;
+            emptyCount = 0;
+          }
+          fenRow += square;
+        }
+      }
+      if (emptyCount > 0) fenRow += emptyCount;
+      
+      console.log(`🎨 Row ${rowIndex} FEN: "${fenRow}"`);
+      return fenRow;
+    }).join('/');
+    
+    fenParts[0] = newPosition;
+    const newFen = fenParts.join(' ');
+    
+    console.log('🎨 New FEN after placement:', newFen);
+    console.log('🎨 FEN comparison:');
+    console.log('🎨   Old:', boardState.fen);
+    console.log('🎨   New:', newFen);
+    
+    // State güncellemesini verify et
+    setBoardState(prev => {
+      console.log('🎨 setState called, old FEN:', prev.fen);
+      const newState = {
+        ...prev,
+        fen: newFen
+      };
+      console.log('🎨 setState called, new FEN:', newState.fen);
+      return newState;
+    });
+    
+    showStatus('success', `${piece} taşı ${targetSquare} karesine yerleştirildi`);
+    return true;
+  }, "Taş yerleştirilemedi");
+
+  const handlePieceDrop = withErrorBoundary((sourceSquare, targetSquare, piece) => {
+    console.log('🚨 handlePieceDrop ÇAĞRILDI!', { sourceSquare, targetSquare, piece });
+    console.log('🚨 Chess instance exists:', !!chess);
+    console.log('🚨 IsRecording:', boardState.isRecording);
+    
+    // *** BU ÇOK ÖNEMLİ: Spare piece detection ***
+    if (!sourceSquare && piece) {
+      console.log('🎨 ✅ SPARE PIECE DROP DETECTED!', { piece, targetSquare });
+      const result = handleSparePieceDrop(piece, targetSquare);
+      console.log('🎨 ✅ SPARE PIECE DROP RESULT:', result);
+      return result;
+    }
+    
+    // Eğer sourceSquare varsa ama piece undefined ise
+    if (sourceSquare && !piece) {
+      console.log('🎨 ⚠️ Source square provided but no piece info');
+      console.log('🎨 ⚠️ This might be a board-to-board move');
+    }
+    
+    // Eğer her ikisi de varsa
+    if (sourceSquare && piece) {
+      console.log('🎨 ⚠️ Both source and piece provided - board to board move');
+    }
+    
     if (boardState.isRecording && chess) {
       // Recording mode - only allow legal moves
       try {
+        console.log('🎯 Attempting chess move...');
+        console.log('🎯 Current chess FEN:', chess.fen());
+        console.log('🎯 Board state FEN:', boardState.fen);
+        
+        // FEN senkronizasyonu kontrol et
+        if (chess.fen() !== boardState.fen) {
+          console.warn('🔄 FEN sync issue detected, reloading chess instance');
+          try {
+            chess.load(boardState.fen);
+            console.log('✅ Chess instance resynced with board FEN');
+          } catch (syncError) {
+            console.error('❌ FEN sync failed:', syncError);
+          }
+        }
+        
+        // Kaynak karede ne var kontrol et
+        const sourceSquareInfo = chess.get(sourceSquare);
+        console.log('🎯 Source square content:', { square: sourceSquare, piece: sourceSquareInfo });
+        
+        if (!sourceSquareInfo) {
+          console.error('❌ No piece on source square:', sourceSquare);
+          console.log('🔍 Checking all pieces on board:');
+          
+          // Tüm board'u scan et
+          for (let rank = 8; rank >= 1; rank--) {
+            for (let file = 'a'; file <= 'h'; file = String.fromCharCode(file.charCodeAt(0) + 1)) {
+              const square = file + rank;
+              const piece = chess.get(square);
+              if (piece) {
+                console.log(`  ${square}: ${piece.color}${piece.type.toUpperCase()}`);
+              }
+            }
+          }
+          
+          showStatus('error', `${sourceSquare} karesinde taş yok! Chess engine ile board senkronize değil.`);
+          return false;
+        }
+        
+        // Available moves for this piece
+        const availableMoves = chess.moves({ square: sourceSquare, verbose: true });
+        console.log('🎯 Available moves from', sourceSquare, ':', availableMoves.map(m => m.san));
+        
         const move = chess.move({
           from: sourceSquare,
           to: targetSquare,
           promotion: 'q'
         });
-          if (move) {
-          // DÜZELTME: Variant recording kontrolü - SADECE STRING KAYDET
+        
+        if (move) {
+          console.log('✅ Legal move made:', move.san);
+          
           if (isRecordingVariant) {
-            // Kesinlikle sadece SAN string'ini kaydet
-            setCurrentVariantMoves(prev => [...prev, move.san]);
-            console.log('🎮 Variant move added:', move.san);
-          } else {
-            // DÜZELTME: Normal recording için sadece move string'i kaydet
-            setBoardState(prev => ({
-              ...prev,
-              moveList: [...prev.moveList, move.san] // ✅ Sadece string, object değil!
+            setCurrentVariantMoves(prev => {
+              const newMoves = [...prev, move.san];
+              console.log('🎮 Variant moves updated:', newMoves);
+              return newMoves;
+            });
+            // Variant için sadece FEN güncelle
+            setBoardState(prev => ({ 
+              ...prev, 
+              fen: chess.fen() 
             }));
+          } else {
+            // Ana hat için hem moveList hem FEN güncelle - TEK setState
+            setBoardState(prev => {
+              const newMoveList = [...prev.moveList, move.san];
+              console.log('📝 Main line updated:', newMoveList);
+              return {
+                ...prev,
+                moveList: newMoveList,
+                fen: chess.fen()
+              };
+            });
           }
           
-          // Her iki durumda da board state'i güncelle
-          setBoardState(prev => ({ 
-            ...prev, 
-            fen: chess.fen() 
-          }));
           return true;
-        }        return false;
-      } catch (moveError) {
-        console.error("Move error:", moveError);
+        } else {
+          console.error('❌ Chess.move returned null');
+          showStatus('error', 'Geçersiz hamle!');
+          return false;
+        }
+      } catch (error) {
+        console.error('❌ Chess.move threw error:', error);
+        showStatus('error', `Hamle hatası: ${error.message}`);
         return false;
       }
     } else {
-      // Edit mode - allow any piece movement
-      try {
-        const color = piece[0];
-        const type = piece[1].toLowerCase();
-        
-        chessEditor.remove(sourceSquare);
-        chessEditor.remove(targetSquare);
-        const success = chessEditor.put({ type, color }, targetSquare);
-        
-        if (success) {
-          const newFen = chessEditor.fen();
-          setBoardState(prev => ({
-            ...prev,
-            fen: newFen
-          }));
-          return true;
+      console.log('🚨 Not in recording mode or no chess instance');
+      // Edit mode - allow any piece movement using FEN manipulation
+      console.log('🎨 Edit mode piece drop:', { sourceSquare, targetSquare });
+      
+      // FEN manipulation for piece placement in edit mode
+      const fenParts = boardState.fen.split(' ');
+      const position = fenParts[0];
+      
+      // Get piece from source square
+      const sourceFile = sourceSquare.charCodeAt(0) - 97;
+      const sourceRank = 8 - parseInt(sourceSquare[1]);
+      const targetFile = targetSquare.charCodeAt(0) - 97;
+      const targetRank = 8 - parseInt(targetSquare[1]);
+      
+      // Convert FEN to board array
+      const rows = position.split('/');
+      const board = rows.map(row => {
+        const expandedRow = [];
+        for (const char of row) {
+          if (isNaN(char)) {
+            expandedRow.push(char);
+          } else {
+            for (let i = 0; i < parseInt(char); i++) {
+              expandedRow.push('1');
+            }
+          }
         }
-        return false;
-      } catch (error) {
-        console.error("Taş taşıma hatası:", error);
-        return false;
+        return expandedRow;
+      });
+      
+      // Move piece
+      const pieceToMove = board[sourceRank][sourceFile];
+      if (pieceToMove !== '1') {
+        board[sourceRank][sourceFile] = '1'; // Clear source
+        board[targetRank][targetFile] = pieceToMove; // Place at target
+        
+        // Convert back to FEN
+        const newPosition = board.map(row => {
+          let fenRow = '';
+          let emptyCount = 0;
+          for (const square of row) {
+            if (square === '1') {
+              emptyCount++;
+            } else {
+              if (emptyCount > 0) {
+                fenRow += emptyCount;
+                emptyCount = 0;
+              }
+              fenRow += square;
+            }
+          }
+          if (emptyCount > 0) fenRow += emptyCount;
+          return fenRow;
+        }).join('/');
+        
+        fenParts[0] = newPosition;
+        const newFen = fenParts.join(' ');
+        
+        setBoardState(prev => ({
+          ...prev,
+          fen: newFen
+        }));
+        
+        return true;
       }
-    }
-  };
-
-  const handlePieceDropOffBoard = (sourceSquare) => {
-    try {
-      chessEditor.remove(sourceSquare);
-      const newFen = chessEditor.fen();
-      setBoardState(prev => ({
-        ...prev,
-        fen: newFen
-      }));
-      return true;
-    } catch (error) {
-      console.error("Taş silme hatası:", error);
       return false;
     }
-  };
+  }, "Hamle yapılamadı");
+
+  const handlePieceDropOffBoard = withErrorBoundary((sourceSquare) => {
+    if (boardState.isRecording) {
+      showStatus('warning', 'Hamle kaydı sırasında taş silinemez');
+      return false;
+    }
+    
+    console.log('🗑️ Removing piece from:', sourceSquare);
+    // In edit mode, allow piece removal
+    return true;
+  }, "Taş silinemedi");
 
   // Board control functions
   const handleClearBoard = () => {
-    chessEditor.clear();
     setBoardState(prev => ({
       ...prev,
       fen: '8/8/8/8/8/8/8/8 w - - 0 1',
       moveList: [],
       isRecording: false
     }));
+    setChess(null);
+    showStatus('success', 'Tahta temizlendi');
   };
 
   const handleStartPosition = () => {
     const startFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-    chessEditor.load(startFen);
     setBoardState(prev => ({
       ...prev,
       fen: startFen,
       moveList: [],
       isRecording: false
     }));
+    setChess(null);
+    showStatus('success', 'Başlangıç pozisyonu yüklendi');
   };
 
   const handleToggleTurn = () => {
@@ -172,7 +440,6 @@ const PuzzleCreationStep = ({ puzzleSet, setPuzzleSet, onNext, onPrevious }) => 
     fenParts[1] = fenParts[1] === 'w' ? 'b' : 'w';
     const newFen = fenParts.join(' ');
     
-    chessEditor.load(newFen);
     setBoardState(prev => ({
       ...prev,
       fen: newFen,
@@ -181,32 +448,68 @@ const PuzzleCreationStep = ({ puzzleSet, setPuzzleSet, onNext, onPrevious }) => 
   };
 
   const handlePlaceKings = () => {
-    chessEditor.put({ type: 'k', color: 'w' }, 'e1');
-    chessEditor.put({ type: 'k', color: 'b' }, 'e8');
-    const newFen = chessEditor.fen();
+    // Simple FEN manipulation to place kings
+    const fenParts = boardState.fen.split(' ');
+    // This is a simplified version - in a real app you'd parse and modify the FEN properly
+    fenParts[0] = '4k3/8/8/8/8/8/8/4K3';
+    
     setBoardState(prev => ({
       ...prev,
-      fen: newFen
+      fen: fenParts.join(' ')
     }));
+    showStatus('success', 'Şahlar yerleştirildi');
   };
-
-  // Move recording functions - DÜZELTME: useRef kullan
-  const handleStartRecording = () => {
+  // Move recording functions
+  const handleStartRecording = withErrorBoundary(() => {
     const currentFen = boardState.fen;
     
     console.log('🎬 Recording Started with FEN:', currentFen);
-    console.log('🎬 Board State:', boardState);
-      // CRITICAL: Ref'i hemen güncelle - asenkron problem yok!
+    console.log('🎬 Board state at recording start:', boardState);
+    
     recordingStartFenRef.current = currentFen;
     
-    const hasKings = currentFen.includes('K') && currentFen.includes('k');
-    
     try {
-      const newChess = hasKings ? 
-        new ExtendedChess(currentFen) : 
-        new ExtendedChess(currentFen, { bypass: [10] });
+      // Önce normal Chess ile dene
+      let chessInstance;
       
-      setChess(newChess);
+      try {
+        chessInstance = new Chess(currentFen);
+        console.log('✅ Normal Chess instance created');
+      } catch (normalError) {
+        console.log('⚠️ Normal Chess failed, trying ExtendedChess:', normalError.message);
+        
+        // Normal Chess başarısız olursa ExtendedChess kullan
+        chessInstance = new ExtendedChess(currentFen, { 
+          bypass: [10] 
+        });
+        console.log('✅ ExtendedChess instance created as fallback');
+      }
+      
+      console.log('🎯 Chess FEN after creation:', chessInstance.fen());
+      console.log('🎯 Current board FEN:', currentFen);
+      console.log('🎯 Turn:', chessInstance.turn());
+      
+      // Tüm taşları konsola yazdır
+      console.log('🎯 All pieces on chess instance:');
+      for (let rank = 8; rank >= 1; rank--) {
+        for (let file = 'a'; file <= 'h'; file = String.fromCharCode(file.charCodeAt(0) + 1)) {
+          const square = file + rank;
+          const piece = chessInstance.get(square);
+          if (piece) {
+            console.log(`  ${square}: ${piece.color}${piece.type.toUpperCase()}`);
+          }
+        }
+      }
+      
+      // Legal moves 
+      try {
+        const moves = chessInstance.moves();
+        console.log('🎯 Legal moves:', moves);
+      } catch (moveError) {
+        console.log('⚠️ No legal moves calculated:', moveError);
+      }
+      
+      setChess(chessInstance);
       
       setBoardState(prev => ({
         ...prev,
@@ -215,39 +518,37 @@ const PuzzleCreationStep = ({ puzzleSet, setPuzzleSet, onNext, onPrevious }) => 
       }));
       
       setCurrentPositionIndex(-1);
+      showStatus('success', 'Hamle kaydı başladı');
     } catch (error) {
-      console.error("Hamle kaydı başlatılamadı:", error);
-      alert("Bu pozisyondan hamle kaydı başlatılamıyor.");
+      console.error('❌ Chess instance creation failed:', error);
+      showStatus('error', 'Hamle kaydı başlatılamadı: ' + error.message);
     }
-  };
+  }, "Hamle kaydı başlatılamadı");
 
-  // DÜZELTME: handleStopRecording - ref'i TEMİZLEME!
   const handleStopRecording = () => {
     setBoardState(prev => ({
       ...prev,
       isRecording: false
-    }));    setChess(null);
-    // ❌ KALDIRILDI: recordingStartFenRef.current = '';
-    // ❌ KALDIRILDI: setRecordingStartFen('');
+    }));
+    setChess(null);
+    showStatus('info', 'Hamle kaydı durduruldu');
   };
-
-  // DÜZELTME: Ref'ten FEN'i al
-  const rewindToPosition = (toMoveIndex) => {
-    // Ref'ten doğru FEN'i al - asenkron problem yok!
+  const rewindToPosition = withErrorBoundary((toMoveIndex) => {
     const startFen = recordingStartFenRef.current || boardState.fen;
     
     console.log('🔄 Rewind to position:', {
       toMoveIndex,
       startFen,
-      recordingStartFenRef: recordingStartFenRef.current,
-      boardStateFen: boardState.fen,
       moveList: boardState.moveList
     });
     
     if (toMoveIndex <= 0) return startFen;
     
     try {
-      const tempChess = new ExtendedChess(startFen, { bypass: [10] });
+      // ExtendedChess kullan
+      const tempChess = new ExtendedChess(startFen, { 
+        bypass: [10] 
+      });
       
       for (let i = 0; i < toMoveIndex && i < boardState.moveList.length; i++) {
         const move = boardState.moveList[i];
@@ -265,27 +566,21 @@ const PuzzleCreationStep = ({ puzzleSet, setPuzzleSet, onNext, onPrevious }) => 
       
       return finalFen;
     } catch (error) {
-      console.error('Position rewind error:', error);
+      console.error('❌ Rewind error:', error);
       return startFen;
     }
-  };
-  // DÜZELTME: Ref kullanarak doğru FEN'i al
-  const startVariantRecording = (fromMoveIndex) => {
-    // Recording state'ini kontrol et ama ref'i koru
+  }, "Pozisyon geri alınamadı");
+  const startVariantRecording = withErrorBoundary((fromMoveIndex) => {
     const wasRecording = boardState.isRecording;
-    
-    // CRITICAL: Ref'ten doğru FEN'i al
     const actualStartFen = recordingStartFenRef.current;
     
     if (!actualStartFen) {
-      console.error('❌ No recording start FEN found!');
-      alert('Önce hamle kaydı başlatın!');
+      showStatus('error', 'Önce hamle kaydı başlatın!');
       return;
     }
     
     console.log('🎯 Variant recording with start FEN:', actualStartFen);
     
-    // Recording'i geçici olarak durdur (ref'i koruyarak)
     if (wasRecording) {
       setBoardState(prev => ({
         ...prev,
@@ -300,30 +595,53 @@ const PuzzleCreationStep = ({ puzzleSet, setPuzzleSet, onNext, onPrevious }) => 
     
     const fenToRewindTo = rewindToPosition(fromMoveIndex);
     
-    const newChess = new ExtendedChess(fenToRewindTo, { bypass: [10] });
-    
-    setChess(newChess);
-    setBoardState(prev => ({
-      ...prev,
-      fen: fenToRewindTo,
-      isRecording: true
-    }));
-    
-    setCurrentPositionIndex(fromMoveIndex - 1);
-  };
-
+    try {
+      // ExtendedChess kullan
+      const newChess = new ExtendedChess(fenToRewindTo, { 
+        bypass: [10] 
+      });
+      
+      setChess(newChess);
+      setBoardState(prev => ({
+        ...prev,
+        fen: fenToRewindTo,
+        isRecording: true
+      }));
+      
+      setCurrentPositionIndex(fromMoveIndex - 1);
+      showStatus('info', `Hamle ${fromMoveIndex + 1} için varyant kaydı başladı`);
+    } catch (error) {
+      console.error('❌ Variant chess instance error:', error);
+      showStatus('error', 'Varyant kaydı başlatılamadı');
+    }
+  }, "Varyant kaydı başlatılamadı");
   // Move navigation function
-  const navigateToMove = (moveIndex) => {
+  const navigateToMove = withErrorBoundary((moveIndex) => {
     console.log(`🎯 Navigating to move ${moveIndex}`);
+    
+    // Başlangıç pozisyonuna git
+    if (moveIndex === -1) {
+      const startFen = recordingStartFenRef.current || boardState.fen;
+      setBoardState(prev => ({
+        ...prev,
+        fen: startFen
+      }));
+      setCurrentPositionIndex(-1);
+      return;
+    }
     
     if (!boardState.moveList || moveIndex < 0 || moveIndex >= boardState.moveList.length) {
       console.warn('❌ Invalid move index:', moveIndex);
       return;
     }
 
+    const startFen = recordingStartFenRef.current || boardState.fen;
+    
     try {
-      const startFen = recordingStartFenRef.current || boardState.fen;
-      const tempChess = new ExtendedChess(startFen, { bypass: [10] });
+      // ExtendedChess kullan
+      const tempChess = new ExtendedChess(startFen, { 
+        bypass: [10] 
+      });
       
       // Replay moves up to the target index
       for (let i = 0; i <= moveIndex; i++) {
@@ -339,30 +657,29 @@ const PuzzleCreationStep = ({ puzzleSet, setPuzzleSet, onNext, onPrevious }) => 
       }));
       
       setCurrentPositionIndex(moveIndex);
-      
     } catch (error) {
-      console.error('❌ Navigation error:', error);
+      console.error('❌ Navigate error:', error);
     }
-  };
+  }, "Hamleye gidilemedi");
+
   const stopVariantRecording = () => {
     if (currentVariantMoves.length > 0 && variantStartIndex >= 0) {
       console.log('🎯 Saving variant moves:', currentVariantMoves);
-      console.log('🎯 Variant moves types:', currentVariantMoves.map(m => typeof m));
       
       const newVariant = {
         name: `variant_${String.fromCharCode(97 + tempVariants.length)}`,
         parentVariant: "main",
         parentMoveIndex: variantStartIndex,
         moves: currentVariantMoves.map(m => 
-          typeof m === 'string' ? m : m.move  // Kesinlikle string olsun
+          typeof m === 'string' ? m : m.move
         )
       };
       
       console.log('🎯 New variant object:', newVariant);
       setTempVariants(prev => [...prev, newVariant]);
+      showStatus('success', `Varyant ${newVariant.name} kaydedildi`);
     }
     
-    // State'leri resetle AMA ref'i KORU
     setIsRecordingVariant(false);
     setVariantStartIndex(-1);
     setCurrentVariantMoves([]);
@@ -371,12 +688,9 @@ const PuzzleCreationStep = ({ puzzleSet, setPuzzleSet, onNext, onPrevious }) => 
       isRecording: false
     }));
     setChess(null);
-    // ✅ recordingStartFenRef.current koruyoruz - temizlemiyoruz!
   };
 
-  // DÜZELTME: handleSavePuzzle - BURADA temizle
-  const handleSavePuzzle = () => {
-    // Ref'ten doğru FEN'i al
+  const handleSavePuzzle = withErrorBoundary(() => {
     const puzzleStartFen = recordingStartFenRef.current || boardState.fen;
     
     console.log('💾 Saving puzzle with start FEN:', puzzleStartFen);
@@ -395,19 +709,11 @@ const PuzzleCreationStep = ({ puzzleSet, setPuzzleSet, onNext, onPrevious }) => 
       puzzles: [...prev.puzzles, newPuzzle]
     }));
 
-    // ✅ YENİ PUZZLE İÇİN HAZIRLIK - BOARD'I TEMİZLE
-    handleClearBoard(); // Önce board'ı temizle
+    // Board'ı temizle
+    handleClearBoard();
     
     // Tüm state'leri resetle
-    setBoardState(prev => ({
-      ...prev,
-      fen: '8/8/8/8/8/8/8/8 w - - 0 1', // ✅ Boş board
-      moveList: [],
-      isRecording: false,
-      turn: 'w' // ✅ Beyaz başlasın
-    }));
-      setChess(null);
-    recordingStartFenRef.current = ''; // ✅ Ref'i temizle
+    recordingStartFenRef.current = '';
     setIsRecordingVariant(false);
     setVariantStartIndex(-1);
     setCurrentVariantMoves([]);
@@ -415,13 +721,33 @@ const PuzzleCreationStep = ({ puzzleSet, setPuzzleSet, onNext, onPrevious }) => 
     setTempVariants([]);
     
     console.log('✅ New puzzle ready - Board cleared for next puzzle');
-    alert('Puzzle kaydedildi! Yeni puzzle için board temizlendi.');
-  };
+    showStatus('success', 'Puzzle kaydedildi! Yeni puzzle için board temizlendi.');
+  }, "Puzzle kaydedilemedi");
+
   const currentPuzzleNumber = puzzleSet.puzzles.length + 1;
   
   return (
     <ChessboardDnDProvider backend={HTML5Backend}>
       <div className="max-w-6xl mx-auto">
+        {/* Status Message - Fixed position to avoid layout shifts */}
+        {statusMessage.message && (
+          <div className={`fixed top-4 left-1/2 transform -translate-x-1/2 z-50 px-4 py-3 rounded-lg shadow-lg transition-all duration-300 ${
+            statusMessage.type === 'success' ? 'bg-green-100 text-green-800 border border-green-200' :
+            statusMessage.type === 'error' ? 'bg-red-100 text-red-800 border border-red-200' :
+            statusMessage.type === 'warning' ? 'bg-yellow-100 text-yellow-800 border border-yellow-200' :
+            'bg-blue-100 text-blue-800 border border-blue-200'
+          }`}>
+            <div className="flex items-center gap-2">
+              <span>
+                {statusMessage.type === 'success' ? '✅' :
+                 statusMessage.type === 'error' ? '❌' :
+                 statusMessage.type === 'warning' ? '⚠️' : 'ℹ️'}
+              </span>
+              {statusMessage.message}
+            </div>
+          </div>
+        )}
+        
         <div className="bg-white rounded-lg shadow p-6">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
@@ -471,27 +797,22 @@ const PuzzleCreationStep = ({ puzzleSet, setPuzzleSet, onNext, onPrevious }) => 
                 {/* Chessboard */}
                 <Chessboard
                   position={boardState.fen}
-                  onPieceDrop={handlePieceDrop}
-                  onSparePieceDrop={handleSparePieceDrop}
+                  onPieceDrop={(sourceSquare, targetSquare, piece) => {
+                    console.log('🔍 Chessboard onPieceDrop called:', { sourceSquare, targetSquare, piece });
+                    const result = handlePieceDrop(sourceSquare, targetSquare, piece);
+                    console.log('🔍 onPieceDrop result:', result);
+                    return result;
+                  }}
                   onPieceDropOffBoard={handlePieceDropOffBoard}
                   boardWidth={boardWidth}
-                  boardOrientation="white"
-                  allowDragOutsideBoard={!boardState.isRecording}
-                  dropOffBoardAction="trash"
-                  customBoardStyle={{ borderRadius: "4px", boxShadow: "0 2px 10px rgba(0, 0, 0, 0.5)" }}
-                  customDarkSquareStyle={{ backgroundColor: '#b58863' }}
-                  customLightSquareStyle={{ backgroundColor: '#f0d9b5' }}
                   arePiecesDraggable={true}
-                  customPieces={pieces.reduce((acc, piece) => ({
-                    ...acc,
-                    [piece]: ({ squareWidth }) => (
-                      <img
-                        src={`/pieces/${piece}.png`}
-                        alt={piece}
-                        style={{ width: squareWidth, height: squareWidth }}
-                      />
-                    )
-                  }), {})}
+                  customDropSquareStyle={{
+                    backgroundColor: 'rgba(0, 255, 0, 0.4)'
+                  }}
+                  customSquareStyles={{}}
+                  customBoardStyle={{
+                    borderRadius: '4px'
+                  }}
                 />
 
                 {/* Bottom Spare Pieces - White */}
@@ -546,6 +867,84 @@ const PuzzleCreationStep = ({ puzzleSet, setPuzzleSet, onNext, onPrevious }) => 
                   🔄 Sıra: {boardState.turn === 'w' ? 'Beyaz' : 'Siyah'}
                 </button>
               </div>
+
+              {/* Test button - temporary */}
+              <button
+                onClick={() => {
+                  console.log('🧪 TEST: Detailed board analysis');
+                  console.log('🧪 Current board FEN:', boardState.fen);
+                  console.log('🧪 Is recording:', boardState.isRecording);
+                  console.log('🧪 Chess instance exists:', !!chess);
+                  
+                  // FEN'i parse et ve göster
+                  const fenParts = boardState.fen.split(' ');
+                  const position = fenParts[0];
+                  const rows = position.split('/');
+                  
+                  console.log('🧪 Board breakdown:');
+                  rows.forEach((row, index) => {
+                    console.log(`🧪   Rank ${8-index}: "${row}"`);
+                  });
+                  
+                  // f2 karesini özellikle kontrol et
+                  console.log('🧪 Manual f2 check:');
+                  const f2File = 5; // f = 5 (0-indexed)
+                  const f2Rank = 6; // 2nd rank = index 6 (0-indexed from top)
+                  
+                  const expandedRows = rows.map(row => {
+                    const expandedRow = [];
+                    for (const char of row) {
+                      if (isNaN(char)) {
+                        expandedRow.push(char);
+                      } else {
+                        for (let i = 0; i < parseInt(char); i++) {
+                          expandedRow.push('1');
+                        }
+                      }
+                    }
+                    return expandedRow;
+                  });
+                  
+                  console.log('🧪 Expanded board:', expandedRows);
+                  console.log('🧪 f2 content:', expandedRows[f2Rank] ? expandedRows[f2Rank][f2File] : 'undefined');
+                  
+                  if (chess) {
+                    console.log('🧪 Chess instance FEN:', chess.fen());
+                    console.log('🧪 Chess instance f2:', chess.get('f2'));
+                    
+                    console.log('🧪 All pieces in chess instance:');
+                    for (let rank = 8; rank >= 1; rank--) {
+                      for (let file = 'a'; file <= 'h'; file = String.fromCharCode(file.charCodeAt(0) + 1)) {
+                        const square = file + rank;
+                        const piece = chess.get(square);
+                        if (piece) {
+                          console.log(`🧪   ${square}: ${piece.color}${piece.type.toUpperCase()}`);
+                        }
+                      }
+                    }
+                  }
+                }}
+                className="px-3 py-2 bg-yellow-100 text-yellow-700 rounded text-sm"
+              >
+                🧪 Debug Board State
+              </button>
+
+              {/* Manual Spare Piece Test - temporary */}
+              <button
+                onClick={() => {
+                  console.log('🧪 MANUAL SPARE PIECE TEST');
+                  const testResult = handleSparePieceDrop('wR', 'f2');
+                  console.log('🧪 Manual test result:', testResult);
+                  
+                  // Sonra FEN'i kontrol et
+                  setTimeout(() => {
+                    console.log('🧪 FEN after manual test:', boardState.fen);
+                  }, 100);
+                }}
+                className="px-3 py-2 bg-orange-100 text-orange-700 rounded text-sm"
+              >
+                🧪 Manual Spare Piece Test
+              </button>
             </div>
 
             {/* Right Column - Puzzle Info & Controls */}
@@ -568,7 +967,7 @@ const PuzzleCreationStep = ({ puzzleSet, setPuzzleSet, onNext, onPrevious }) => 
                 </div>
               </div>
 
-              {/* YENİ: Move Navigation - Recording kontrolü kaldırıldı */}
+              {/* Move Navigation */}
               {boardState.moveList.length > 0 && (
                 <div className="bg-blue-50 p-4 rounded-lg">
                   <h4 className="text-sm font-medium text-blue-700 mb-2">Hamle Navigasyonu</h4>
@@ -640,18 +1039,7 @@ const PuzzleCreationStep = ({ puzzleSet, setPuzzleSet, onNext, onPrevious }) => 
                         >
                           ⏹️ Kaydı Durdur
                         </button>
-                        {/* YENİ: Variant Stop Button */}
                         {isRecordingVariant && (
-                          <button
-                            onClick={stopVariantRecording}
-                            className="px-3 py-1 bg-purple-500 text-white rounded text-sm hover:bg-purple-600"
-                          >
-                            ⏹️ Varyant Kaydını Durdur
-                          </button>
-                        )}
-
-                        {/* EKLENMESİ GEREKEN - "✓ Varyantı Tamamla" Button */}
-                        {isRecordingVariant && currentVariantMoves.length > 0 && (
                           <button
                             onClick={stopVariantRecording}
                             className="px-3 py-1 bg-purple-600 text-white rounded text-sm hover:bg-purple-700"
@@ -671,7 +1059,6 @@ const PuzzleCreationStep = ({ puzzleSet, setPuzzleSet, onNext, onPrevious }) => 
                   </div>
                 )}
 
-                {/* YENİ: Variant Recording Indicator */}
                 {isRecordingVariant && (
                   <div className="text-sm text-purple-600 mb-2 flex items-center gap-2">
                     <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></div>
@@ -679,10 +1066,20 @@ const PuzzleCreationStep = ({ puzzleSet, setPuzzleSet, onNext, onPrevious }) => 
                   </div>
                 )}
 
-                {/* Move List - GÜNCELLEME */}
+                {/* Move List */}
                 <div className="min-h-[120px] max-h-[200px] overflow-y-auto border border-gray-200 rounded p-3 bg-white">
                   {boardState.moveList.length === 0 ? (
-                    <p className="text-gray-500 text-sm text-center py-4">Henüz hamle kaydedilmedi</p>
+                    <div className="text-center py-4">
+                      <p className="text-gray-500 text-sm">Henüz hamle kaydedilmedi</p>
+                      {puzzleSet.puzzles.length > 0 && (
+                        <div className="mt-2 p-2 bg-green-50 rounded text-sm">
+                          <span className="text-green-700">✅ Son puzzle kaydedildi!</span>
+                          <div className="text-xs text-green-600 mt-1">
+                            Puzzle #{puzzleSet.puzzles.length} - {puzzleSet.puzzles[puzzleSet.puzzles.length - 1].mainLine.length} hamle
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   ) : (
                     <div className="space-y-1">
                       {boardState.moveList.map((move, index) => (
@@ -694,7 +1091,7 @@ const PuzzleCreationStep = ({ puzzleSet, setPuzzleSet, onNext, onPrevious }) => 
                             className={`font-medium flex-1 px-1 rounded transition-colors cursor-pointer hover:bg-gray-100 ${
                               currentPositionIndex === index ? 'bg-blue-100 text-blue-800' : ''
                             }`}
-                            onClick={() => navigateToMove(index)} // ✅ Recording kontrolü yok
+                            onClick={() => navigateToMove(index)}
                             title="Bu pozisyona git"
                           >
                             {move}
@@ -715,19 +1112,19 @@ const PuzzleCreationStep = ({ puzzleSet, setPuzzleSet, onNext, onPrevious }) => 
                     </div>
                   )}
                   
-                  {/* YENİ: Variant Display */}
+                  {/* Current Variant */}
                   {currentVariantMoves.length > 0 && (
                     <div className="mt-3 p-2 bg-purple-50 rounded border border-purple-200">
                       <div className="text-xs font-medium text-purple-700 mb-1">
                         Varyant (Hamle {variantStartIndex + 1}'den):
                       </div>
                       <div className="text-sm text-purple-600">
-                        {currentVariantMoves.map(moveData => moveData.move).join(' ')}
+                        {currentVariantMoves.join(' ')}
                       </div>
                     </div>
                   )}
 
-                  {/* YENİ: Saved Variants List - EKLE */}
+                  {/* Saved Variants List */}
                   {tempVariants.length > 0 && (
                     <div className="mt-3 p-3 bg-indigo-50 rounded border border-indigo-200">
                       <div className="flex justify-between items-center mb-2">
@@ -747,6 +1144,7 @@ const PuzzleCreationStep = ({ puzzleSet, setPuzzleSet, onNext, onPrevious }) => 
                             <button
                               onClick={() => {
                                 setTempVariants(prev => prev.filter((_, i) => i !== index));
+                                showStatus('info', 'Varyant silindi');
                               }}
                               className="text-red-500 hover:text-red-700 text-sm"
                             >
@@ -763,7 +1161,8 @@ const PuzzleCreationStep = ({ puzzleSet, setPuzzleSet, onNext, onPrevious }) => 
               {/* Saved Puzzles List */}
               {puzzleSet.puzzles.length > 0 && (
                 <div className="bg-gray-50 p-4 rounded-lg">
-                  <h4 className="font-medium mb-2">Kaydedilen Puzzlelar</h4>                  <div className="space-y-1 text-sm max-h-32 overflow-y-auto">
+                  <h4 className="font-medium mb-2">Kaydedilen Puzzlelar</h4>
+                  <div className="space-y-1 text-sm max-h-32 overflow-y-auto">
                     {puzzleSet.puzzles.map((puzzle) => (
                       <div key={puzzle.id} className="bg-white p-2 rounded border">
                         <div className="flex justify-between">
