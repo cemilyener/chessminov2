@@ -36,92 +36,91 @@ const MetadataStep = ({ puzzleSet, setPuzzleSet, onNext, onPgnImport, generateNe
   };
 
   // Basit PGN işleme fonksiyonu - DÜZELTME
-  const processPgnSimple = (pgnText) => {
+  const processPgnSimple = (pgnContent) => {
+    console.log('🎮 Starting PGN processing...');
+    
     try {
-      console.log('🎮 Starting PGN processing...');
+      // Her oyunu ayrı puzzle olarak işle - BURAYI DÜZELTELİM
+      const games = pgnContent.split(/\n\s*\n/).filter(game => 
+        game.trim() && 
+        game.includes('1.') && 
+        !game.startsWith('[')  // Header satırlarını filtrele
+      );
       
-      // PGN header'larını kontrol et
-      const fenMatch = pgnText.match(/\[FEN "(.+?)"\]/);
-      const startFen = fenMatch ? fenMatch[1] : "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+      console.log('🎮 Found games:', games.length);
+      console.log('🎮 Games preview:', games.map((g, i) => `Game ${i+1}: ${g.substring(0, 50)}...`));
       
-      // Yeni chess instance
-      const chess = new Chess();
-      
-      // FEN'den başlat (eğer varsa)
-      if (fenMatch) {
-        try {
-          chess.load(startFen);
-          console.log('📋 Loaded custom FEN:', startFen);
-        } catch (fenError) {
-          console.warn("FEN yükleme hatası, standart pozisyon kullanılıyor:", fenError);
-          chess.reset();
-        }
-      }
-      
-      // PGN'den sadece hamleleri çıkar
-      // Önce tüm header'ları temizle
-      let cleanPgn = pgnText;
-      
-      // Header'ları kaldır
-      cleanPgn = cleanPgn.replace(/\[.*?\]\s*/g, '');
-      
-      // Yorumları kaldır
-      cleanPgn = cleanPgn.replace(/\{[^}]*\}/g, '');
-      cleanPgn = cleanPgn.replace(/\([^)]*\)/g, '');
-      
-      // Satır sonlarını boşlukla değiştir
-      cleanPgn = cleanPgn.replace(/\n/g, ' ');
-      
-      // Çoklu boşlukları tek boşluğa indir
-      cleanPgn = cleanPgn.replace(/\s+/g, ' ').trim();
-      
-      console.log('🧹 Cleaned PGN:', cleanPgn);
-      
-      // Hamle numaralarını bul ve hamleleri ayır
-      const moveRegex = /\d+\.\s*([^\s]+)(?:\s+([^\s]+))?/g;
-      const moves = [];
-      let match;
-      
-      while ((match = moveRegex.exec(cleanPgn)) !== null) {
-        if (match[1] && match[1] !== '*') moves.push(match[1]);
-        if (match[2] && match[2] !== '*') moves.push(match[2]);
-      }
-      
-      console.log('📋 Extracted moves:', moves);
-      
-      // Hamleleri chess.js ile doğrula
-      const validMoves = [];
-      const testChess = new Chess();
-      if (fenMatch) {
-        try {
-          testChess.load(startFen);
-        } catch {
-          testChess.reset();
-        }
-      }
-      
-      for (const move of moves) {
-        try {
-          const result = testChess.move(move);
-          if (result) {
-            validMoves.push(result.san);
+      if (games.length === 0) {
+        // Tek blok PGN ise manuel ayır
+        const movePattern = /\d+\.\s*[a-zA-Z0-9+#-]+/g;
+        const allMoves = pgnContent.match(movePattern) || [];
+        
+        if (allMoves.length > 0) {
+          // Her 3-6 hamleyi ayrı puzzle yap
+          const puzzles = [];
+          for (let i = 0; i < allMoves.length; i += 4) {
+            const puzzleMoves = allMoves.slice(i, i + 4);
+            if (puzzleMoves.length >= 2) {
+              puzzles.push({
+                id: `pgn_${puzzles.length + 1}`,
+                fen: customFen || 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+                mainLine: puzzleMoves.map(move => move.replace(/\d+\.\s*/, '')),
+                alternatives: []
+              });
+            }
           }
-        } catch (moveError) {
-          console.warn(`Geçersiz hamle atlandı: ${move}`);
+          return puzzles;
         }
       }
       
-      console.log('✅ Valid moves:', validMoves);
+      // Normal game processing
+      const puzzles = games.map((game, index) => {
+        const moves = extractMovesFromGame(game);
+        console.log(`🎮 Game ${index + 1} moves:`, moves);
+        
+        return {
+          id: `pgn_${index + 1}`,
+          fen: customFen || 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+          mainLine: moves,
+          alternatives: []
+        };
+      }).filter(puzzle => puzzle.mainLine.length > 0);
       
-      return {
-        fen: startFen,
-        mainLine: validMoves,
-        alternatives: [] // Varyantlar manuel eklenecek
-      };
+      console.log('🎮 Final puzzles:', puzzles.length);
+      return puzzles;
+      
     } catch (error) {
-      console.error("PGN parsing error:", error);
-      throw new Error(`PGN formatı hatalı: ${error.message}`);
+      console.error('❌ PGN processing error:', error);
+      return [];
     }
+  };
+
+  // Yardımcı fonksiyon ekle:
+  const extractMovesFromGame = (gameText) => {
+    // Temizlik
+    let cleanText = gameText
+      .replace(/\{[^}]*\}/g, '') // Yorumları sil
+      .replace(/\([^)]*\)/g, '') // Parantezleri sil
+      .replace(/\$\d+/g, '')     // Annotation'ları sil
+      .replace(/[?!]+/g, '')     // Soru/ünlem işaretlerini sil
+      .replace(/\d+-\d+/g, '')   // Sonuçları sil (1-0, 0-1, 1/2-1/2)
+      .replace(/\*/g, '');       // Yıldızları sil
+    
+    // Hamleleri çıkar
+    const movePattern = /\d+\.+\s*([a-zA-Z0-9+#=-]+)(?:\s+([a-zA-Z0-9+#=-]+))?/g;
+    const moves = [];
+    let match;
+    
+    while ((match = movePattern.exec(cleanText)) !== null) {
+      if (match[1]) moves.push(match[1]);
+      if (match[2]) moves.push(match[2]);
+    }
+    
+    return moves.filter(move => 
+      move && 
+      move.length > 1 && 
+      /^[a-zA-Z]/.test(move) // Harf ile başlamalı
+    );
   };
 
   // PGN dosyası yükleme handler'ı
@@ -181,6 +180,40 @@ const MetadataStep = ({ puzzleSet, setPuzzleSet, onNext, onPgnImport, generateNe
     };
     
     reader.readAsText(file);
+  };
+
+  // PGN verilerini işlemek için yeni fonksiyon
+  const handlePgnUpload = (pgnData) => {
+    console.log('🧪 PGN RAW DATA:', pgnData);
+    
+    // PGN'i oyunlara ayır
+    const games = pgnData.split(/\n\s*\n/).filter(game => game.trim());
+    console.log('🧪 SPLIT GAMES:', games.length);
+    
+    games.forEach((game, index) => {
+      console.log(`🧪 GAME ${index + 1}:`, game.substring(0, 100) + '...');
+    });
+    
+    // Her oyunu ayrı puzzle olarak işle
+    const puzzles = games.map((game, index) => {
+      const moves = extractMovesFromPGN(game);
+      console.log(`🧪 MOVES FOR GAME ${index + 1}:`, moves);
+      
+      return {
+        id: `pgn_${index + 1}`,
+        fen: extractFenFromPGN(game) || 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+        mainLine: moves,
+        alternatives: []
+      };
+    });
+    
+    console.log('🧪 FINAL PUZZLES:', puzzles);
+    
+    // Puzzle set'e ekle
+    setPuzzleSet(prev => ({
+      ...prev,
+      puzzles: [...prev.puzzles, ...puzzles]
+    }));
   };
 
   // Smart Code validation
@@ -361,6 +394,28 @@ const MetadataStep = ({ puzzleSet, setPuzzleSet, onNext, onPgnImport, generateNe
               {puzzleSet.puzzles.length > 0 ? 'Export →' : 'Manuel Oluştur →'}
             </button>
           </div>
+        </div>
+
+        {/* Debug Button - Geçici */}
+        <div className="mt-4">
+          <button
+            onClick={() => {
+              console.log('🧪 PGN IMPORT DEBUG');
+              console.log('🧪 Current puzzle set:', puzzleSet);
+              console.log('🧪 Total puzzles:', puzzleSet.puzzles.length);
+              
+              puzzleSet.puzzles.forEach((puzzle, index) => {
+                console.log(`🧪 Puzzle ${index + 1}:`);
+                console.log(`  - ID: ${puzzle.id}`);
+                console.log(`  - FEN: ${puzzle.fen}`);
+                console.log(`  - Main Line: ${puzzle.mainLine}`);
+                console.log(`  - Alternatives: ${puzzle.alternatives?.length || 0}`);
+              });
+            }}
+            className="px-3 py-2 bg-blue-100 text-blue-700 rounded text-sm hover:bg-blue-200"
+          >
+            🧪 Puzzle Set Debug
+          </button>
         </div>
       </div>
     </div>

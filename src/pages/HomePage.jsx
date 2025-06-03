@@ -123,53 +123,6 @@ const HomePage = () => {
                 Derslere Başla
               </span>
             </Link>{" "}
-            {/* PDF Oluşturucu Kart */}
-            <Link
-              to="/pdf-generator"
-              className="bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow text-center"
-            >
-              <div className="bg-green-100 inline-block p-4 rounded-full mb-4">
-                <FaFilePdf className="h-10 w-10 text-green-600" />
-              </div>
-              <h3 className="text-xl font-semibold text-green-800 mb-3">
-                PDF Ödev Oluşturucu
-              </h3>
-              <p className="text-gray-600 mb-4">
-                Özelleştirilmiş satranç çalışma sayfaları oluşturun
-              </p>
-              <span className="mt-2 inline-block text-green-700 font-medium">
-                PDF Oluştur
-              </span>
-            </Link>
-            {/* PGN Dönüştürücü Kart */}
-            <Link
-              to="/pgn-converter"
-              className="bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow text-center"
-            >
-              <div className="bg-indigo-100 inline-block p-4 rounded-full mb-4">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-10 w-10 text-indigo-600"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7"
-                  />
-                </svg>
-              </div>
-              <h3 className="text-xl font-semibold text-indigo-800 mb-3">PGN Dönüştürücü</h3>
-              <p className="text-gray-600 mb-4">
-                PGN dosyalarını sisteminize uygun formatlara dönüştürün
-              </p>
-              <span className="mt-2 inline-block text-indigo-700 font-medium">
-                Dönüştür
-              </span>
-            </Link>
             {/* Basic Board Page Kart */}
             <Link
               to="/basic-board"
@@ -232,22 +185,22 @@ const HomePage = () => {
                 Hemen Başla
               </span>
             </Link>
-            {/* Homework Generator Kart - ✅ Güncellendi */}
+            {/* Ödev Oluşturucu Kart - TEK PDF ÇÖZÜMÜ */}
             <Link
-              to="/homework-generator" // ✅ Route değişti
+              to="/homework-generator"
               className="bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow text-center"
             >
               <div className="bg-green-100 inline-block p-4 rounded-full mb-4">
                 <FaFilePdf className="h-10 w-10 text-green-600" />
               </div>
               <h3 className="text-xl font-semibold text-green-800 mb-3">
-                Homework Generator {/* ✅ Başlık değişti */}
+                Ödev Oluşturucu
               </h3>
               <p className="text-gray-600 mb-4">
-                Create customized chess homework worksheets for students {/* ✅ Açıklama değişti */}
+                Öğrenciler için özelleştirilmiş satranç çalışma sayfaları oluşturun
               </p>
               <span className="mt-2 inline-block text-green-700 font-medium">
-                Create Homework
+                Ödev Oluştur
               </span>
             </Link>
           </div>

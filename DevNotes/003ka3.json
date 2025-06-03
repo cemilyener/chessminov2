@@ -1,0 +1,177 @@
+{
+    "id": "003ka3",
+    "title": "Kale Alma - Seviye 3",
+    "description": "Kale ile alma alıştırmaları - zor seviye",
+    "topic": "rook",
+    "exerciseType": "capture",
+    "difficulty": 3,
+    "pieceSet": "merida_no_kings",
+    "nextSetId": "004ka3",
+    "puzzles": [
+      {
+        "id": "003ka3_01",
+        "index": 1,
+        "title": "Rook ile capture 1",
+        "fen": "4k3/p1p5/8/8/p1p5/8/R7/4K3 w - - 0 1",
+        "mainLine": [
+          {
+            "move": "Rxa4",
+            "fen": "4k3/p1p5/8/8/R1p5/8/8/4K3 w - - 0 1",
+            "isLast": false
+          },
+          {
+            "move": "Kf8",
+            "fen": "5k2/p1p5/8/8/R1p5/8/8/4K3 b - - 1 2",
+            "isLast": false
+          },
+          {
+            "move": "Rxc4",
+            "fen": "5k2/p1p5/8/8/2R5/8/8/4K3 w - - 0 2",
+            "isLast": false
+          },
+          {
+            "move": "Ke8",
+            "fen": "4k3/p1p5/8/8/2R5/8/8/4K3 b - - 1 3",
+            "isLast": false
+          },
+          {
+            "move": "Rxc7",
+            "fen": "4k3/p1R5/8/8/8/8/8/4K3 w - - 0 3",
+            "isLast": false
+          },
+          {
+            "move": "Kf8",
+            "fen": "5k2/p1R5/8/8/8/8/8/4K3 b - - 1 4",
+            "isLast": false
+          },
+          {
+            "move": "Rxa7",
+            "fen": "5k2/R7/8/8/8/8/8/4K3 w - - 0 4",
+            "isLast": true
+          }
+        ],
+        "alternatives": [
+          {
+            "name": "a",
+            "parentVariant": "main",
+            "parentMoveIndex": 1,
+            "moves": [
+              {
+                "move": "Rxa7",
+                "fen": "5k2/R1p5/8/8/2p5/8/8/4K3 w - - 0 2",
+                "isLast": false
+              },
+              {
+                "move": "Ke8",
+                "fen": "4k3/R1p5/8/8/2p5/8/8/4K3 b - - 1 3",
+                "isLast": false
+              },
+              {
+                "move": "Rxc7",
+                "fen": "4k3/2R5/8/8/2p5/8/8/4K3 w - - 0 3",
+                "isLast": false
+              },
+              {
+                "move": "Kf8",
+                "fen": "5k2/2R5/8/8/2p5/8/8/4K3 b - - 1 4",
+                "isLast": false
+              },
+              {
+                "move": "Rxc4",
+                "fen": "5k2/8/8/8/2R5/8/8/4K3 w - - 0 4",
+                "isLast": true
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "003ka3_02",
+        "index": 2,
+        "title": "Rook ile capture 2",
+        "fen": "5r1k/8/8/8/p3p3/8/p1R1p3/6K1 w - - 0 1",
+        "mainLine": [
+          {
+            "move": "Rxe2",
+            "fen": "5r1k/8/8/8/p3p3/8/p3R3/6K1 b - - 0 1",
+            "isLast": false
+          },
+          {
+            "move": "Kg8",
+            "fen": "5rk1/8/8/8/p3p3/8/p3R3/6K1 w - - 1 2",
+            "isLast": false
+          },
+          {
+            "move": "Rxe4",
+            "fen": "5rk1/8/8/8/p3R3/8/p7/6K1 b - - 0 2",
+            "isLast": false
+          },
+          {
+            "move": "Kh8",
+            "fen": "5r1k/8/8/8/p3R3/8/p7/6K1 w - - 1 3",
+            "isLast": false
+          },
+          {
+            "move": "Rxa4",
+            "fen": "5r1k/8/8/8/R7/8/p7/6K1 b - - 0 3",
+            "isLast": false
+          },
+          {
+            "move": "Kg8",
+            "fen": "5rk1/8/8/8/R7/8/p7/6K1 w - - 1 4",
+            "isLast": false
+          },
+          {
+            "move": "Rxa2",
+            "fen": "5rk1/8/8/8/8/8/R7/6K1 b - - 0 4",
+            "isLast": true
+          }
+        ],
+        "alternatives": [
+          {
+            "name": "a",
+            "parentVariant": "main",
+            "parentMoveIndex": -1,
+            "moves": [
+              {
+                "move": "Rxa2",
+                "fen": "5r1k/8/8/8/p3p3/8/R3p3/6K1 b - - 0 1",
+                "isLast": false
+              },
+              {
+                "move": "Kg8",
+                "fen": "5rk1/8/8/8/p3p3/8/R3p3/6K1 w - - 1 2",
+                "isLast": false
+              },
+              {
+                "move": "Rxa4",
+                "fen": "5rk1/8/8/8/R3p3/8/4p3/6K1 b - - 0 2",
+                "isLast": false
+              },
+              {
+                "move": "Kh8",
+                "fen": "5r1k/8/8/8/R3p3/8/4p3/6K1 w - - 1 3",
+                "isLast": false
+              },
+              {
+                "move": "Rxe4",
+                "fen": "5r1k/8/8/8/4R3/8/4p3/6K1 b - - 0 3",
+                "isLast": false
+              },
+              {
+                "move": "Kg8",
+                "fen": "5rk1/8/8/8/4R3/8/4p3/6K1 w - - 1 4",
+                "isLast": false
+              },
+              {
+                "move": "Rxe2",
+                "fen": "5rk1/8/8/8/8/8/4R3/6K1 b - - 0 4",
+                "isLast": true
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "puzzleCount": 2
+  }
