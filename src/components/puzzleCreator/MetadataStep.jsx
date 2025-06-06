@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import SmartNamingDecoder from '@/utils/smartNaming/SmartNamingDecoder';
 import { Chess } from 'chess.js';
+import { testConverter, saveJsonToFile } from '../../utils/pgn/PgnToJsonConverter';
 
 const MetadataStep = ({ puzzleSet, setPuzzleSet, onNext, onPgnImport, generateNextSetId }) => {
   const [fileInputKey, setFileInputKey] = useState(Date.now());
   const [isProcessing, setIsProcessing] = useState(false);
   const [pgnPreview, setPgnPreview] = useState(null);
+  const [pgnFile, setPgnFile] = useState(null);
+  const [importStatus, setImportStatus] = useState('');
 
   // Smart Code değişiklik handler'ı
   const handleSmartCodeChange = (e) => {
@@ -219,6 +222,43 @@ const MetadataStep = ({ puzzleSet, setPuzzleSet, onNext, onPgnImport, generateNe
   // Smart Code validation
   const isSmartCodeValid = puzzleSet.id.length === 6 && /^\d{3}[kfvsapmtrgbh][aibcs][123]$/.test(puzzleSet.id);
 
+  // PGN dosyası yükleme
+  const handlePgnFileUpload = (event) => {
+    const file = event.target.files[0];
+    if (file && file.name.endsWith('.pgn')) {
+      setPgnFile(file);
+      setImportStatus('📄 PGN dosyası seçildi: ' + file.name);
+    } else {
+      setImportStatus('❌ Lütfen .pgn dosyası seçin');
+    }
+  };
+
+  // PGN'i JSON'a dönüştür
+  const convertPgnToJson = async () => {
+    if (!pgnFile) {
+      setImportStatus('❌ Önce PGN dosyası seçin');
+      return;
+    }
+
+    try {
+      setImportStatus('🔄 Dönüştürülüyor...');
+      
+      const pgnContent = await pgnFile.text();
+      const result = testConverter(pgnContent, metadata.setId || "001new");
+      
+      setImportStatus(`✅ ${result.puzzleCount} puzzle oluşturuldu!`);
+      
+      // JSON'u otomatik indir
+      saveJsonToFile(result);
+      
+      setImportStatus(prev => prev + '\n📥 JSON dosyası indirildi!');
+      
+    } catch (error) {
+      console.error('Conversion error:', error);
+      setImportStatus('❌ Dönüştürme hatası: ' + error.message);
+    }
+  };
+
   return (
     <div className="max-w-2xl mx-auto">
       <div className="bg-white rounded-lg shadow p-6">
@@ -416,6 +456,43 @@ const MetadataStep = ({ puzzleSet, setPuzzleSet, onNext, onPgnImport, generateNe
           >
             🧪 Puzzle Set Debug
           </button>
+        </div>
+      </div>
+
+      {/* YENİ: PGN Import Section */}
+      <div className="mt-8 p-6 border-2 border-dashed border-gray-300 rounded-lg">
+        <h3 className="text-lg font-semibold mb-4">📥 PGN Import (Beta)</h3>
+        
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-2">
+              PGN Dosyası Seçin:
+            </label>
+            <input
+              type="file"
+              accept=".pgn"
+              onChange={handlePgnFileUpload}
+              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+            />
+          </div>
+          
+          <button
+            onClick={convertPgnToJson}
+            disabled={!pgnFile}
+            className="w-full px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 disabled:bg-gray-400"
+          >
+            🔄 PGN → JSON Dönüştür
+          </button>
+          
+          {importStatus && (
+            <div className="mt-4 p-4 bg-gray-100 rounded whitespace-pre-line text-sm">
+              {importStatus}
+            </div>
+          )}
+        </div>
+        
+        <div className="mt-4 text-xs text-gray-500">
+          ℹ️ PGN dosyanız puzzle formatına dönüştürülüp JSON olarak indirilecek
         </div>
       </div>
     </div>

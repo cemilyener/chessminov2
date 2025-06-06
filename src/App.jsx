@@ -8,6 +8,7 @@ import TeacherBoardPage from "@/pages/TeacherBoardPage";
 import BasicBoardPage from "@/components/board/BasicBoardPage";
 import HomeworkGeneratorPage from "@/pages/HomeworkGeneratorPage";
 import SimplePuzzleCreator from "@/pages/SimplePuzzleCreator";
+import PgnSplitterTest from "./pages/PgnSplitterTest";
 
 import "./App.css";
 
@@ -24,6 +25,7 @@ function App() {
         <Route path="/homework-generator" element={<HomeworkGeneratorPage />} />
         <Route path="/simple-puzzle-creator" element={<SimplePuzzleCreator />}/>
         <Route path="/pdf-generator" element={<Navigate to="/homework-generator" replace />} />
+        <Route path="/pgn-test" element={<PgnSplitterTest />} />
       </Routes>
     </Router>
   );

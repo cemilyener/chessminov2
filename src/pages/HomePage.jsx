@@ -203,6 +203,24 @@ const HomePage = () => {
                 Ödev Oluştur
               </span>
             </Link>
+            {/* PGN Test Kartı - Geliştirme Bölümü için */}
+            <Link
+              to="/pgn-test"
+              className="bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow text-center"
+            >
+              <div className="bg-purple-100 inline-block p-4 rounded-full mb-4">
+                🧪
+              </div>
+              <h3 className="text-xl font-semibold text-purple-800 mb-3">
+                PGN Test
+              </h3>
+              <p className="text-gray-600 mb-4">
+                fc3.pgn splitter test sayfası
+              </p>
+              <span className="mt-2 inline-block text-purple-700 font-medium">
+                Test Et
+              </span>
+            </Link>
           </div>
         </div>
       </section>
