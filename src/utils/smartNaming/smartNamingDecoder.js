@@ -1,10 +1,11 @@
 /**
- * ChessMino Akıllı İsimlendirme Sistemi Decoder
+ * ChessMino Akıllı İsimlendirme Sistemi Decoder - Updated with LESSON_TOPICS
+ * Step 2: PIECE_TYPES → LESSON_TOPICS + Description Format Fix
  */
 
-// Schema'dan import et - DUP LİKASYON KALDIR
+// ✅ YENİ Import - PIECE_TYPES → LESSON_TOPICS
 import { 
-  PIECE_TYPES, 
+  LESSON_TOPICS,  // ⭐ PIECE_TYPES yerine LESSON_TOPICS
   EXERCISE_TYPES, 
   DIFFICULTY_LEVELS, 
   PIECE_SETS,
@@ -34,9 +35,9 @@ export class SmartNamingDecoder {
     const exerciseType = code.charAt(4).toLowerCase();
     const difficulty = code.charAt(5);
 
-    // Validasyon kontrolleri
+    // Validasyon kontrolleri - LESSON_TOPICS ile
     const isValidSetNumber = /^\d{3}$/.test(setNumber);
-    const isValidPieceType = Object.keys(PIECE_TYPES).includes(pieceType);
+    const isValidPieceType = Object.keys(LESSON_TOPICS).includes(pieceType);  // ⭐ LESSON_TOPICS
     const isValidExerciseType = Object.keys(EXERCISE_TYPES).includes(exerciseType);
     const isValidDifficulty = Object.keys(DIFFICULTY_LEVELS).includes(difficulty);
 
@@ -51,7 +52,7 @@ export class SmartNamingDecoder {
       setNumberStr: setNumber,
       pieceType: {
         code: pieceType,
-        ...PIECE_TYPES[pieceType]
+        ...LESSON_TOPICS[pieceType]  // ⭐ LESSON_TOPICS kullanımı
       },
       exerciseType: {
         code: exerciseType,
@@ -79,7 +80,7 @@ export class SmartNamingDecoder {
       setNumberStr: '001',
       pieceType: {
         code: 'k',
-        ...PIECE_TYPES['k']
+        ...LESSON_TOPICS['k']  // ⭐ LESSON_TOPICS kullanımı
       },
       exerciseType: {
         code: 'a',
@@ -98,24 +99,36 @@ export class SmartNamingDecoder {
 
   /**
    * Kod bilgilerinden otomatik başlık üret
+   * Format: "Kale Alma ⭐" (dersi kelimesi temizlendi)
    */
   static generateTitle(setNumber, pieceType, exerciseType, difficulty) {
-    const piece = PIECE_TYPES[pieceType]?.name || 'Taş';
+    const piece = LESSON_TOPICS[pieceType]?.name || 'Taş';  // ⭐ LESSON_TOPICS
     const exercise = EXERCISE_TYPES[exerciseType]?.name || 'Egzersiz';
-    const difficultyName = DIFFICULTY_LEVELS[difficulty]?.name || 'Seviye';
+    const stars = '⭐'.repeat(parseInt(difficulty));
     
-    return `${piece} ${exercise} - Seviye ${difficulty} (Set ${setNumber})`;
+    // "Kale Dersi" → "Kale", "Mat Konusu" → "Mat" dönüşümü
+    const cleanPiece = piece.replace(/\s*([Dd]ersi?|[Kk]onusu)\s*/g, '');
+    
+    return `${cleanPiece} ${exercise} ${stars}`;
   }
 
   /**
    * Kod bilgilerinden otomatik açıklama üret
+   * YENİ Format: "Kale taş alma ⭐" (hedef format)
    */
   static generateDescription(pieceType, exerciseType, difficulty) {
-    const piece = PIECE_TYPES[pieceType]?.name || 'taş';
-    const exercise = EXERCISE_TYPES[exerciseType]?.description || 'egzersizleri';
-    const difficultyDesc = DIFFICULTY_LEVELS[difficulty]?.description || '';
+    const piece = LESSON_TOPICS[pieceType]?.name || 'taş';  // ⭐ LESSON_TOPICS
+    const exercise = EXERCISE_TYPES[exerciseType]?.name || 'egzersiz';
+    const stars = '⭐'.repeat(parseInt(difficulty));
     
-    return `${piece} ile ${exercise}. ${difficultyDesc}`;
+    // "Kale Dersi" → "Kale", "Mat Konusu" → "Mat" dönüşümü
+    const cleanPiece = piece.replace(/\s*([Dd]ersi?|[Kk]onusu)\s*/g, '');
+    
+    // Türkçe toLowerCase sorunu çözümü
+    const cleanExercise = exercise.replace(/İ/g, 'i').toLowerCase();
+    
+    // ⭐ HEDEF FORMAT: "Kale taş alma ⭐"
+    return `${cleanPiece} taş ${cleanExercise} ${stars}`;
   }
 
   /**
@@ -131,7 +144,7 @@ export class SmartNamingDecoder {
    */
   static getAllOptions() {
     return {
-      pieceTypes: Object.entries(PIECE_TYPES).map(([code, data]) => ({
+      lessonTopics: Object.entries(LESSON_TOPICS).map(([code, data]) => ({  // ⭐ pieceTypes → lessonTopics
         value: code,
         label: data.name,
         englishName: data.englishName

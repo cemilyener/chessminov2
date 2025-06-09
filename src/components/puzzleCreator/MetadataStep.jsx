@@ -244,7 +244,10 @@ const MetadataStep = ({ puzzleSet, setPuzzleSet, onNext, onPgnImport, generateNe
       setImportStatus('🔄 Dönüştürülüyor...');
       
       const pgnContent = await pgnFile.text();
-      const result = testConverter(pgnContent, metadata.setId || "001new");
+      
+      // ✅ DOĞRU: puzzleSet.id kullan
+      const setId = puzzleSet.id || "001new";
+      const result = testConverter(pgnContent, setId);
       
       setImportStatus(`✅ ${result.puzzleCount} puzzle oluşturuldu!`);
       
@@ -252,6 +255,12 @@ const MetadataStep = ({ puzzleSet, setPuzzleSet, onNext, onPgnImport, generateNe
       saveJsonToFile(result);
       
       setImportStatus(prev => prev + '\n📥 JSON dosyası indirildi!');
+      
+      console.log('📥 Converter sonucu:', {
+        setId: result.id,
+        puzzleCount: result.puzzleCount,
+        firstPuzzle: result.puzzles[0]?.id
+      });
       
     } catch (error) {
       console.error('Conversion error:', error);

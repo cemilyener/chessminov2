@@ -1,176 +1,230 @@
+// src/pages/PuzzlePage.jsx
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
-import { Chessboard } from 'react-chessboard';
-import { Chess } from 'chess.js';
+import { useParams, useNavigate } from 'react-router-dom';
+import PuzzleLoader from '../utils/puzzle/PuzzleLoader';
+import usePuzzleState from '../hooks/usePuzzleState';
+import PuzzleBoard from '../components/puzzle/PuzzleBoard';
 
-// Örnek puzzle verisi yükleme fonksiyonu
-const fetchPuzzleById = async (puzzleId) => {
-  return {
-    id: puzzleId,
-    title: `Puzzle ${puzzleId}`,
-    fen: "r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 0 1", // İlginç bir başlangıç pozisyonu
-    description: "Basit bir deneme bulmacası"
+const PuzzlePage = ({ testMode = false }) => {
+  const { setId } = useParams();
+  const navigate = useNavigate();
+  const [puzzleSet, setPuzzleSet] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  // YENİ: Puzzle state hook
+  const puzzleState = usePuzzleState(puzzleSet);
+
+  // Board key for reset (flash fix)
+  const [boardKey, setBoardKey] = useState(0);
+  
+  // Handle move from board
+  const handleBoardMove = (moveData) => {
+    console.log('Board move attempt:', moveData);
+    
+    const result = puzzleState.makeMove(moveData);
+    
+    // Visual feedback
+    if (result) {
+      console.log('✅ Move accepted!');
+      
+      // Success feedback eklenebilir
+      if (puzzleState.isComplete) {
+        setTimeout(() => {
+          alert('🎉 Puzzle Complete! Well done!');
+          // Auto advance to next puzzle
+          if (puzzleState.currentPuzzleIndex < puzzleState.totalPuzzles - 1) {
+            setTimeout(() => {
+              puzzleState.nextPuzzle();
+            }, 1000);
+          }
+        }, 500);
+      }
+    } else {
+      console.log('❌ Move rejected!');
+      
+      // Error feedback - board shake animation
+      const boardElement = document.querySelector('.puzzle-board-container');
+      if (boardElement) {
+        boardElement.classList.add('shake-animation');
+        setTimeout(() => {
+          boardElement.classList.remove('shake-animation');
+        }, 500);
+      }
+    }
+    
+    return result;
   };
-};
+  
+  // Reset puzzle with board refresh
+  const handleReset = () => {
+    setBoardKey(prev => prev + 1); // Board'u yenile
+    puzzleState.resetPuzzle();
+  };
 
-const PuzzlePage = () => {
-  const { puzzleId } = useParams();
-  const [puzzle, setPuzzle] = useState(null);
-  const [position, setPosition] = useState("start");
-  const [game, setGame] = useState(new Chess());
-  const [message, setMessage] = useState("Puzzle yükleniyor...");
-  const [selectedSquare, setSelectedSquare] = useState(null);
-
-  // Puzzle verisi yükleme
   useEffect(() => {
     const loadPuzzle = async () => {
       try {
-        const loadedPuzzle = await fetchPuzzleById(puzzleId);
-        setPuzzle(loadedPuzzle);
+        setLoading(true);
+        setError(null);
         
-        // Chess.js ile pozisyonu ayarla
-        const newGame = new Chess();
-        try {
-          newGame.load(loadedPuzzle.fen);
-          setGame(newGame);
-          setPosition(loadedPuzzle.fen);
-          setMessage(loadedPuzzle.title);
-        } catch (err) {
-          setMessage("Geçersiz pozisyon!");
-          console.error("FEN yükleme hatası:", err);
+        // Test mode için mock data
+        if (testMode) {
+          setPuzzleSet({
+            id: 'test',
+            title: 'Test Puzzle Set',
+            puzzleCount: 1,
+            puzzles: [{
+              id: 'test_01',
+              fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+              mainLine: []
+            }]
+          });
+        } else {
+          // Gerçek data yükle
+          const data = await PuzzleLoader.loadPuzzleSet(setId);
+          setPuzzleSet(data);
         }
       } catch (err) {
-        setMessage(`Puzzle yükleme hatası: ${err.message}`);
+        setError(err.message);
+      } finally {
+        setLoading(false);
       }
     };
-    
-    loadPuzzle();
-  }, [puzzleId]);
 
-  // Kare tıklama işleyicisi
-  const handleSquareClick = (square) => {
-    // Daha önce bir kare seçilmiş mi?
-    if (selectedSquare) {
-      // Hamle yapmayı dene
-      try {
-        const move = game.move({
-          from: selectedSquare,
-          to: square,
-          promotion: 'q' // Otomatik vezir terfi
-        });
-        
-        // Geçerli hamle ise tahtayı güncelle
-        if (move) {
-          setPosition(game.fen());
-          setMessage("Hamle yapıldı!");
+    if (setId || testMode) {
+      loadPuzzle();
+    }
+  }, [setId, testMode]);
+
+  // Auto-advance to next puzzle when complete
+  useEffect(() => {
+    if (puzzleState.isComplete && !puzzleState.isAutoPlaying) {
+      console.log('🎯 Puzzle complete, preparing auto-advance...');
+      
+      const timer = setTimeout(() => {
+        if (puzzleState.currentPuzzleIndex < puzzleState.totalPuzzles - 1) {
+          console.log('➡️ Auto-advancing to next puzzle');
+          puzzleState.nextPuzzle();
+        } else {
+          // All puzzles complete
+          setTimeout(() => {
+            alert('🏆 Congratulations! All puzzles completed!');
+            navigate('/'); // Navigate home
+          }, 1000);
         }
-      } catch (err) {
-        console.error("Hamle hatası:", err);
-      }
+      }, 2000); // 2 second delay to show completion
       
-      // Her durumda seçimi temizle
-      setSelectedSquare(null);
-      return;
+      return () => clearTimeout(timer);
     }
-    
-    // Yeni kare seç
-    setSelectedSquare(square);
-  };
-  
-  // Tahtayı sıfırlama
-  const resetBoard = () => {
-    if (puzzle) {
-      const newGame = new Chess();
-      newGame.load(puzzle.fen);
-      setGame(newGame);
-      setPosition(puzzle.fen);
-      setMessage(puzzle.title);
-      setSelectedSquare(null);
-    }
-  };
-  
-  // Seçili kareleri vurgulama
-  const getSquareStyles = () => {
-    const styles = {};
-    
-    if (selectedSquare) {
-      styles[selectedSquare] = { background: 'rgba(255, 255, 0, 0.4)' };
-      
-      // Seçili taşın gidebileceği kareleri vurgula
-      try {
-        const moves = game.moves({
-          square: selectedSquare,
-          verbose: true
-        });
-        
-        moves.forEach(move => {
-          styles[move.to] = {
-            background: 'radial-gradient(circle, rgba(0,0,0,.1) 25%, transparent 25%)',
-            borderRadius: '50%'
-          };
-        });
-      } catch (err) {
-        console.error("Hareket hesaplama hatası:", err);
-      }
-    }
-    
-    return styles;
-  };
-  
+  }, [puzzleState.isComplete, puzzleState.isAutoPlaying, puzzleState.currentPuzzleIndex, puzzleState.totalPuzzles, puzzleState.nextPuzzle, navigate]);
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-2xl mb-2">♟️</div>
+          <div>Puzzle yükleniyor...</div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-red-500 text-2xl mb-2">⚠️</div>
+          <div className="text-red-600">{error}</div>
+          <button 
+            onClick={() => navigate('/')}
+            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded"
+          >
+            Ana Sayfaya Dön
+          </button>
+        </div>
+      </div>
+    );
+  }
+  // Success state
   return (
-    <div className="puzzle-page min-h-screen bg-gradient-to-b from-blue-50 to-indigo-100 py-8 px-2 flex flex-col items-center">
-      <div className="w-full max-w-2xl bg-white rounded-2xl shadow-lg p-6 flex flex-col items-center">
-        <h2 className="text-2xl md:text-3xl font-bold text-indigo-700 mb-4 text-center">
-          {puzzle?.title || 'Puzzle'}
-        </h2>
-        
-        <div className="message-area w-full mb-4">
-          <div className="message text-center rounded-lg py-2 px-4 mb-2 bg-indigo-50 text-indigo-700">
-            {message}
+    <div className="min-h-screen bg-gray-100 p-4">
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
+        <div className="bg-white rounded-lg shadow p-4 mb-4">
+          <h1 className="text-2xl font-bold mb-2">
+            {puzzleSet.title || `Puzzle Set: ${setId}`}
+          </h1>
+          <div className="text-sm text-gray-600">
+            Puzzle {puzzleState.currentPuzzleIndex + 1} / {puzzleState.totalPuzzles}
+          </div>
+        </div>
+          {/* Debug Panel - Enhanced */}
+        <div className="bg-white rounded-lg shadow p-4 mb-4">
+          <h2 className="font-semibold mb-2">🔍 Puzzle State Debug:</h2>
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <div>Current Puzzle: {puzzleState.currentPuzzle?.id}</div>
+              <div>Move Index: {puzzleState.currentMoveIndex}</div>
+              <div>Is Complete: {puzzleState.isComplete ? '✅' : '❌'}</div>
+            </div>
+            <div>
+              <div>Expected Moves: {puzzleState.expectedMoves.map(m => m.move).join(', ')}</div>
+              <div>Board FEN: {puzzleState.boardPosition.split(' ')[0]}</div>
+              <div>Last Result: {puzzleState.lastMoveResult || 'none'}</div>
+            </div>
           </div>
         </div>
         
-        <div className="puzzle-layout flex flex-col md:flex-row items-center gap-8 w-full">
-          <div className="flex-shrink-0">
-            <Chessboard
-              position={position}
-              onSquareClick={handleSquareClick}
-              customSquareStyles={getSquareStyles()}
-              boardWidth={340}
-              boardOrientation="white"
-              areArrowsAllowed={true}
-              className="rounded-xl shadow-md border border-indigo-100"
+        {/* BOARD COMPONENT - YENİ */}
+        <div className="bg-white rounded-lg shadow p-4 mb-4">
+          <div className="flex justify-center">
+            <PuzzleBoard
+              position={puzzleState.boardPosition}
+              onMove={handleBoardMove}
+              boardWidth={500}
+              orientation="white"
+              key={boardKey}
             />
           </div>
           
-          <div className="puzzle-controls flex flex-col gap-3 w-full md:w-48">
-            <button onClick={() => setMessage("Bu özellik henüz hazır değil.")}
-              className="bg-yellow-400 hover:bg-yellow-500 text-white font-semibold py-2 px-4 rounded-lg shadow transition">
-              İpucu Göster
-            </button>
-            
-            <button onClick={resetBoard}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg shadow transition">
-              Yeniden Başlat
-            </button>
-            
-            <button onClick={() => window.history.back()}
-              className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-2 px-4 rounded-lg shadow transition">
-              Puzzle Listesine Dön
-            </button>
-            
-            <button onClick={() => window.location.href = '/'}
-              className="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2 px-4 rounded-lg shadow transition">
-              Ana Sayfaya Dön
-            </button>
+          {/* Move Info */}
+          <div className="mt-4 text-center">
+            <div className="text-lg font-medium">
+              Expected Move: <span className="text-blue-600">
+                {puzzleState.expectedMoves[0]?.move || 'Puzzle Complete!'}
+              </span>
+            </div>
+            <div className="text-sm text-gray-600 mt-1">
+              Click or drag pieces to make moves
+            </div>
           </div>
         </div>
         
-        {puzzle?.description && (
-          <div className="puzzle-description mt-6 p-4 bg-blue-50 rounded-lg w-full">
-            <p className="text-gray-700">{puzzle.description}</p>
-          </div>
-        )}
+        {/* Navigation Controls */}
+        <div className="flex gap-2 justify-center">
+          <button 
+            onClick={puzzleState.previousPuzzle}
+            disabled={puzzleState.currentPuzzleIndex === 0}
+            className="px-4 py-2 bg-blue-500 text-white rounded disabled:opacity-50"
+          >
+            ← Previous
+          </button>
+          <button 
+            onClick={handleReset}
+            className="px-4 py-2 bg-yellow-500 text-white rounded"
+          >
+            Reset
+          </button>
+          <button 
+            onClick={puzzleState.nextPuzzle}
+            disabled={puzzleState.currentPuzzleIndex >= puzzleState.totalPuzzles - 1}
+            className="px-4 py-2 bg-blue-500 text-white rounded disabled:opacity-50"
+          >
+            Next →
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -1,0 +1,89 @@
+[33mcommit 48bc25425cccad1d5779a43f39f9715fbcd349c2[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mfeature/basic-board-editor[m[33m)[m
+Author: cemilyener <cemilyener@yandex.com>
+Date:   Fri Jun 6 06:56:58 2025 +0300
+
+    ek deünleme
+
+[33mcommit f9de84e4430fd5253871226f81666225d694e716[m
+Author: cemilyener <cemilyener@yandex.com>
+Date:   Tue Jun 3 12:25:34 2025 +0300
+
+    pgntojson
+
+[33mcommit 2f4856d9aaf4927d5d5c7b535dfb848e89074d47[m
+Author: cemilyener <cemilyener@yandex.com>
+Date:   Fri May 30 19:54:33 2025 +0300
+
+    admin board bitti
+
+[33mcommit 8dbda755286dbd737a242e5a5ee796b97802b66c[m
+Author: cemilyener <cemilyener@yandex.com>
+Date:   Tue May 27 16:50:10 2025 +0300
+
+    ek düzenleme temizlik öncesi
+
+[33mcommit 9728cf101065ec1459518f0a8e8fffad593b6db4[m
+Author: cemilyener <cemilyener@yandex.com>
+Date:   Sun May 25 14:52:30 2025 +0300
+
+    opus öncesi
+
+[33mcommit 6541f8fc27c68e20a8a279b149b680d99332977f[m
+Author: cemilyener <cemilyener@yandex.com>
+Date:   Thu May 15 14:37:35 2025 +0300
+
+    claude  pdf generatoru 2. defa  yapmaya çalışıyor
+
+[33mcommit 7bc4d087d566c740e9e2222ffab99c40ea2e9f9b[m
+Author: cemilyener <cemilyener@yandex.com>
+Date:   Tue May 13 16:01:42 2025 +0300
+
+    gereksiz sayfalar  silindi
+
+[33mcommit ad1192e9e6690f90d8e8ba152200ce65eac3905c[m
+Author: cemilyener <cemilyener@yandex.com>
+Date:   Mon May 12 22:46:41 2025 +0300
+
+    board oldu
+
+[33mcommit fea8be42c6e5dc3b70670e7c44c71a58d9fca89b[m
+Author: cemilyener <cemilyener@yandex.com>
+Date:   Sun May 11 08:31:17 2025 +0300
+
+    Dokümentasyon ve örnek dosyalar eklendi
+
+[33mcommit 8b557f8f4bae43a569c9a46a0d0a1bb2d4360cac[m
+Author: cemilyener <cemilyener@yandex.com>
+Date:   Sun May 11 08:27:09 2025 +0300
+
+    Dokümantasyon: DevNotes güncellendi ve yol haritası eklendi
+
+[33mcommit a04d4ee160256f0676d9cae2b3979f94317a9e9b[m
+Author: cemilyener <cemilyener@yandex.com>
+Date:   Sat May 10 04:44:37 2025 +0300
+
+    Mimari: useChessContent hook'u kaldırıldı, Zustand store geçişi belgelendi
+
+[33mcommit a6488a5f8f553bfd5eda088b4e16f0809404a159[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Author: cemilyener <cemilyener@yandex.com>
+Date:   Wed May 7 08:09:04 2025 +0300
+
+    pgn ile ilgili sorunlar devam  bu aşama için çözüldü gibi duruyor
+
+[33mcommit dc0562bb83dd8f74b02c5d0b06cd898d2a2374e9[m
+Author: cemilyener <cemilyener@yandex.com>
+Date:   Wed May 7 07:08:00 2025 +0300
+
+    pgn ile ilgili sorunlar devam ediyor
+
+[33mcommit 35a1570a6dbb49118b17dffadbb137130a75a152[m
+Author: cemilyener <cemilyener@yandex.com>
+Date:   Wed May 7 05:21:32 2025 +0300
+
+    Ders ilerlemesi ve PGN işleme hazırlığı: App.jsx güncellendi, yeni dizinler eklendi, DevNotes güncellendi
+
+[33mcommit 4cbc80591539d3be50a4e3041d5741c515762b13[m
+Author: cemilyener <cemilyener@yandex.com>
+Date:   Tue May 6 17:29:36 2025 +0300
+
+    Initial commit: Proje yapısı ve bağımlılıklar eklendi

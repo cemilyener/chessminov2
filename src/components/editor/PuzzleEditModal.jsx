@@ -18,14 +18,14 @@ const PuzzleEditModal = ({ puzzle, isOpen, onSave, onCancel }) => {
     nextSetId: '',
     fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
     mainLine: [],
-    variations: []
+    alternatives: []  // ⭐ DEĞIŞIKLIK: variations → alternatives
   });
 
   // Board state
   const [currentFen, setCurrentFen] = useState('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1');
   const [boardOrientation, setBoardOrientation] = useState("white");
   const [boardWidth, setBoardWidth] = useState(360);
-  const [activeTab, setActiveTab] = useState('setup'); // setup, moves, variations
+  const [activeTab, setActiveTab] = useState('setup'); // setup, moves, alternatives
   
   // Game state for move recording
   const [gameForMoves, setGameForMoves] = useState(new Chess());
@@ -54,7 +54,7 @@ const PuzzleEditModal = ({ puzzle, isOpen, onSave, onCancel }) => {
         nextSetId: puzzle.nextSetId || '',
         fen: puzzle.fen || 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
         mainLine: puzzle.mainLine || [],
-        variations: puzzle.variations || []
+        alternatives: puzzle.alternatives || puzzle.variations || []  // ⭐ BACKWARD COMPATIBILITY
       };
       
       setFormData(newFormData);
@@ -95,6 +95,7 @@ const PuzzleEditModal = ({ puzzle, isOpen, onSave, onCancel }) => {
     return () => observer.disconnect();
   }, []);
 
+  // Reset form
   const resetForm = () => {
     const defaultData = {
       title: '',
@@ -106,7 +107,7 @@ const PuzzleEditModal = ({ puzzle, isOpen, onSave, onCancel }) => {
       nextSetId: '',
       fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
       mainLine: [],
-      variations: []
+      alternatives: []  // ⭐ DEĞIŞIKLIK: variations → alternatives
     };
     setFormData(defaultData);
     setCurrentFen(defaultData.fen);
@@ -155,7 +156,7 @@ const PuzzleEditModal = ({ puzzle, isOpen, onSave, onCancel }) => {
     }));
   };
 
-  // Board Editor Functions
+  // Board Editor Functions (değişmez - sadece alternatives ile uyumlu)
   const handleSparePieceDrop = (piece, targetSquare) => {
     const color = piece[0];
     const type = piece[1].toLowerCase();
@@ -171,7 +172,6 @@ const PuzzleEditModal = ({ puzzle, isOpen, onSave, onCancel }) => {
         
         // Reset move game to new position
         try {
-          // Şahlar varsa normal Chess, yoksa ExtendedChess kullan
           const hasKings = newFen.includes('K') && newFen.includes('k');
           if (hasKings) {
             setGameForMoves(new Chess(newFen));
@@ -251,14 +251,13 @@ const PuzzleEditModal = ({ puzzle, isOpen, onSave, onCancel }) => {
     return true;
   };
 
-  // Board control functions
+  // Board control functions (değişmez)
   const handleClearBoard = () => {
     game.clear();
     const newFen = game.fen();
     setCurrentFen(newFen);
     setFormData(prev => ({ ...prev, fen: newFen }));
     
-    // ExtendedChess kullan şahsız pozisyonlar için
     try {
       setGameForMoves(new ExtendedChess(newFen, { bypass: [10] }));
     } catch (error) {
@@ -274,7 +273,7 @@ const PuzzleEditModal = ({ puzzle, isOpen, onSave, onCancel }) => {
     game.load(startFen, { bypass: [10] });
     setCurrentFen(startFen);
     setFormData(prev => ({ ...prev, fen: startFen }));
-    setGameForMoves(new Chess(startFen)); // Bu normal Chess olabilir, geçerli pozisyon
+    setGameForMoves(new Chess(startFen));
     setMoveHistory([]);
     setCurrentMoveIndex(0);
   };
@@ -287,31 +286,28 @@ const PuzzleEditModal = ({ puzzle, isOpen, onSave, onCancel }) => {
     setCurrentFen(newFen);
     setFormData(prev => ({ ...prev, fen: newFen }));
     
-    // Şahlar var, normal Chess kullanabiliriz
     try {
       setGameForMoves(new Chess(newFen));
       setMoveHistory([]);
       setCurrentMoveIndex(0);
     } catch (error) {
       console.warn("Kings position may not be legal for move recording:", error);
-      // Hata varsa ExtendedChess kullan
       setGameForMoves(new ExtendedChess(newFen, { bypass: [10] }));
     }
   };
 
-  // Move recording functions
+  // Move recording functions (değişmez)
   const handleMoveDrop = (sourceSquare, targetSquare) => {
     try {
       const gameCopy = new Chess(gameForMoves.fen());
       const move = gameCopy.move({
         from: sourceSquare,
         to: targetSquare,
-        promotion: 'q' // Default promotion to queen
+        promotion: 'q'
       });
 
       if (move === null) return false;
 
-      // Add move to history
       const newHistory = [...moveHistory, move.san];
       setMoveHistory(newHistory);
       setFormData(prev => ({ ...prev, mainLine: newHistory }));
@@ -332,7 +328,6 @@ const PuzzleEditModal = ({ puzzle, isOpen, onSave, onCancel }) => {
     setMoveHistory(newHistory);
     setFormData(prev => ({ ...prev, mainLine: newHistory }));
 
-    // Recreate game state from initial position + moves
     try {
       const hasKings = formData.fen.includes('K') && formData.fen.includes('k');
       const newGame = hasKings ? new Chess(formData.fen) : new ExtendedChess(formData.fen, { bypass: [10] });
@@ -364,6 +359,7 @@ const PuzzleEditModal = ({ puzzle, isOpen, onSave, onCancel }) => {
     const puzzleData = {
       ...puzzle,
       ...formData,
+      alternatives: formData.alternatives,  // ⭐ EXPLICIT MAPPING: alternatives field
       metadata: {
         smartCode: formData.smartCode,
         decodedData: decodedData.isValid ? decodedData : null,
@@ -398,14 +394,14 @@ const PuzzleEditModal = ({ puzzle, isOpen, onSave, onCancel }) => {
             </button>
           </div>
 
-          {/* Tab Navigation */}
+          {/* Tab Navigation - alternatives term kullanımı */}
           <div className="mb-6 border-b">
             <nav className="flex space-x-8">
-              {[
+              {{
                 { key: 'setup', label: 'Temel Bilgiler', icon: '📝' },
                 { key: 'board', label: 'Tahta & Pozisyon', icon: '♟️' },
                 { key: 'moves', label: 'Hamleler', icon: '➡️' }
-              ].map(tab => (
+              }.map(tab => (
                 <button
                   key={tab.key}
                   onClick={() => setActiveTab(tab.key)}
@@ -550,7 +546,7 @@ const PuzzleEditModal = ({ puzzle, isOpen, onSave, onCancel }) => {
               </div>
             )}
 
-            {/* Board Tab */}
+            {/* Board Tab (değişmez) */}
             {activeTab === 'board' && (
               <ChessboardDnDProvider backend={HTML5Backend}>
                 <div className="space-y-4">
@@ -702,7 +698,7 @@ const PuzzleEditModal = ({ puzzle, isOpen, onSave, onCancel }) => {
               </ChessboardDnDProvider>
             )}
 
-            {/* Moves Tab */}
+            {/* Moves Tab (değişmez) */}
             {activeTab === 'moves' && (
               <div className="space-y-4">
                 <div className="grid md:grid-cols-2 gap-6">
@@ -777,11 +773,14 @@ const PuzzleEditModal = ({ puzzle, isOpen, onSave, onCancel }) => {
                       )}
                     </div>
 
-                    {/* Varyant ekleme (gelecek özellik) */}
+                    {/* ✅ BONUS: Alternatif Hamle Önizlemesi */}
                     <div className="mt-4 p-3 bg-blue-50 rounded text-sm">
-                      <p className="font-medium text-blue-900">💡 Varyant Ekleme</p>
+                      <p className="font-medium text-blue-900">💡 Alternatif Hamleler</p>
                       <p className="text-blue-700 text-xs mt-1">
-                        Varyant ekleme özelliği yakında gelecek. Şimdilik ana hat hamlelerini girebilirsiniz.
+                        {formData.alternatives.length > 0 
+                          ? `${formData.alternatives.length} alternatif hamle kaydedildi`
+                          : 'Alternatif hamle ekleme özelliği yakında gelecek'
+                        }
                       </p>
                     </div>
                   </div>

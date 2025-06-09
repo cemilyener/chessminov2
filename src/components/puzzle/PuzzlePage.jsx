@@ -1,184 +1,264 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
-import {Chessboard} from 'react-chessboard'; // veya kullandığınız tahta bileşeni
-import useChessContent from "../../utils/chess/ChessContentManager";
+import { useParams, useNavigate } from 'react-router-dom';
+import PuzzleLoader from '../utils/puzzle/PuzzleLoader';
+import usePuzzleState from '../hooks/usePuzzleState';
+import PuzzleBoard from '../components/puzzle/PuzzleBoard';
 
-// Örnek puzzle verisi yükleme fonksiyonu (projenize göre değiştirin)
-const fetchPuzzleById = async (puzzleId) => {
-  // API'den veya local JSON'dan yükleme
-  // Bu örnek için basitleştirilmiş
-  const examplePuzzle = {
-    id: puzzleId,
-    title: `Puzzle ${puzzleId}`,
-    fen: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", // Örnek FEN
-    mainLine: [
-      // Örnek hamleler
-      { move: "e4", from: "e2", to: "e4", fen: "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1" },
-      { move: "e5", from: "e7", to: "e5", fen: "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 1" },
-      { move: "Nf3", from: "g1", to: "f3", fen: "rnbqkbnr/pppp1ppp/8/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2", isLast: true }
-    ],
-    alternatives: []
+const PuzzlePage = ({ testMode = false }) => {
+  const { setId } = useParams();
+  const navigate = useNavigate();
+  const [puzzleSet, setPuzzleSet] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [boardKey, setBoardKey] = useState(0);
+  
+  // Puzzle state hook
+  const puzzleState = usePuzzleState(puzzleSet);
+
+  // ⭐ DEBUG: Track puzzle transitions
+  useEffect(() => {
+    if (puzzleState.currentPuzzle) {
+      console.log('📋 PUZZLE CHANGED:', {
+        id: puzzleState.currentPuzzle.id,
+        fen: puzzleState.currentPuzzle.fen,
+        turn: puzzleState.currentPuzzle.fen.split(' ')[1],
+        firstMove: puzzleState.currentPuzzle.mainLine[0]?.move,
+        isWaitingForUser: puzzleState.isWaitingForUser
+      });
+    }
+  }, [puzzleState]);
+
+  // Auto-advance when puzzle complete
+  useEffect(() => {
+    if (puzzleState.isComplete && !puzzleState.isAutoPlaying) {
+      const timer = setTimeout(() => {
+        if (puzzleState.currentPuzzleIndex < puzzleState.totalPuzzles - 1) {
+          puzzleState.nextPuzzle();
+        } else {
+          // All puzzles complete
+          setTimeout(() => {
+            alert('🏆 Congratulations! All puzzles completed!');
+            navigate('/'); // Navigate home
+          }, 1000);
+        }
+      }, 2000); // 2 second delay to show completion
+      
+      return () => clearTimeout(timer);
+    }
+  }, [puzzleState.isComplete, puzzleState.isAutoPlaying, puzzleState.currentPuzzleIndex, puzzleState.totalPuzzles, puzzleState.nextPuzzle, navigate]);
+
+  // Handle board move
+  const handleBoardMove = (moveData) => {
+    const result = puzzleState.makeMove(moveData);
+    
+    // Visual feedback
+    if (result) {
+      console.log('✅ Move accepted!');
+      // Success feedback can be added here
+    } else {
+      console.log('❌ Move rejected!');
+      
+      // Error feedback - board shake animation
+      const boardElement = document.querySelector('.puzzle-board-container');
+      if (boardElement) {
+        boardElement.classList.add('shake-animation');
+        setTimeout(() => {
+          boardElement.classList.remove('shake-animation');
+        }, 500);
+      }
+    }
+    
+    return result;
   };
-  
-  return examplePuzzle;
-};
 
-const PuzzlePage = () => {
-  const { puzzleId } = useParams();
-  const [activePuzzle, setActivePuzzle] = useState(null);
-  const [message, setMessage] = useState('Puzzle yükleniyor...');
-  const [puzzleCompleted, setPuzzleCompleted] = useState(false);
-  const [moveState, setMoveState] = useState(null); // 'correct', 'incorrect', null
-  
-  const {
-    boardPosition,
-    loading,
-    error,
-    setupPuzzle,
-    validateMove,
-    goToNode,
-    getMainLine
-  } = useChessContent({ contentType: 'puzzle' });
-  
-  // Puzzle verisi yükleme
+  // Reset puzzle with board refresh
+  const handleReset = () => {
+    setBoardKey(prev => prev + 1); // Board refresh
+    puzzleState.resetPuzzle();
+  };
+
+  // Load puzzle set
   useEffect(() => {
     const loadPuzzle = async () => {
       try {
-        const puzzle = await fetchPuzzleById(puzzleId);
-        setActivePuzzle(puzzle);
+        setLoading(true);
+        setError(null);
+        
+        if (testMode) {
+          // Test mode with mock data
+          setPuzzleSet({
+            id: 'test',
+            title: 'Test Puzzle Set',
+            puzzleCount: 1,
+            puzzles: [{
+              id: 'test_01',
+              fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+              mainLine: [
+                { move: 'e4', fen: 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1', isLast: false },
+                { move: 'e5', fen: 'rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2', isLast: true }
+              ],
+              alternatives: []
+            }]
+          });
+        } else {
+          // Real data loading
+          const data = await PuzzleLoader.loadPuzzleSet(setId);
+          setPuzzleSet(data);
+        }
       } catch (err) {
-        setMessage(`Puzzle yükleme hatası: ${err.message}`);
+        setError(err.message);
+      } finally {
+        setLoading(false);
       }
     };
-    
-    loadPuzzle();
-  }, [puzzleId]);
-  
-  // Puzzle değiştiğinde setup
-  useEffect(() => {
-    if (activePuzzle) {
-      setupPuzzle(activePuzzle);
-      setMessage(activePuzzle.title || "Puzzle");
-      setPuzzleCompleted(false);
-      setMoveState(null);
+
+    if (setId || testMode) {
+      loadPuzzle();
     }
-  }, [activePuzzle, setupPuzzle]);
-  
-  // Kare tıklandığında
-  const [selectedSquare, setSelectedSquare] = useState(null);
-  
-  const handleSquareClick = (square) => {
-    // Puzzle tamamlanmışsa işlem yapma
-    if (puzzleCompleted) return;
-    
-    // Daha önce bir kare seçilmiş mi?
-    if (selectedSquare) {
-      // Hamleyi doğrula
-      const result = validateMove(selectedSquare, square);
-      
-      if (result.valid) {
-        if (result.correct) {
-          setMoveState('correct');
-          
-          if (result.completed) {
-            setMessage("Harika! Puzzle tamamlandı.");
-            setPuzzleCompleted(true);
-          } else {
-            setMessage("Doğru hamle! Devam edin.");
-          }
-        } else {
-          setMoveState('incorrect');
-          setMessage("Hatalı hamle. Tekrar deneyin.");
-          // Hamlelerden biri yanlışsa ağaçta önceki düğüme dön
-          setTimeout(() => {
-            goToNode(result.lastCorrectNodeId || "root");
-            setMoveState(null);
-          }, 1000);
-        }
-      }
-      
-      // Seçimi temizle
-      setSelectedSquare(null);
-      return;
-    }
-    
-    // Yeni kare seç
-    setSelectedSquare(square);
-  };
-  
-  // Yardım butonu - sıradaki doğru hamleyi göster
-  const showHint = () => {
-    // Ana hattın bir sonraki hamlesini bul
-    const mainLine = getMainLine();
-    const currentIndex = mainLine.findIndex(node => node.fen === boardPosition);
-    
-    if (currentIndex >= 0 && currentIndex < mainLine.length - 1) {
-      const nextMove = mainLine[currentIndex + 1].move;
-      setMessage(`İpucu: ${nextMove.from} karesindeki taşı ${nextMove.to} karesine taşıyın.`);
-    } else {
-      setMessage("İpucu yok. Belki puzzle zaten tamamlandı?");
-    }
-  };
-  
-  // Vurgulanan kareler için stil
-  const getSquareStyles = () => {
-    const styles = {};
-    
-    if (selectedSquare) {
-      styles[selectedSquare] = { background: 'rgba(255, 0, 0, 0.4)' };
-    }
-    
-    if (moveState === 'correct') {
-      const mainLine = getMainLine();
-      const currentIndex = mainLine.findIndex(node => node.fen === boardPosition);
-      
-      if (currentIndex > 0) {
-        const lastMove = mainLine[currentIndex].move;
-        styles[lastMove.from] = { background: 'rgba(0, 255, 0, 0.2)' };
-        styles[lastMove.to] = { background: 'rgba(0, 255, 0, 0.4)' };
-      }
-    }
-    
-    return styles;
-  };
-  
-  return (
-    <div className="puzzle-page min-h-screen bg-gradient-to-b from-blue-50 to-indigo-100 py-8 px-2 flex flex-col items-center">
-      <div className="w-full max-w-2xl bg-white rounded-2xl shadow-lg p-6 flex flex-col items-center">
-        <h2 className="text-2xl md:text-3xl font-bold text-indigo-700 mb-4 text-center">{activePuzzle?.title || 'Puzzle'}</h2>
-        {loading && <div className="text-gray-500">Yükleniyor...</div>}
-        {error && <div className="text-red-600 font-semibold mb-2">{error}</div>}
-        <div className="message-area w-full mb-4">
-          <div className={`message text-center rounded-lg py-2 px-4 mb-2 ${moveState === 'correct' ? 'bg-green-100 text-green-700' : moveState === 'incorrect' ? 'bg-red-100 text-red-700' : 'bg-indigo-50 text-indigo-700'}`}>{message}</div>
+  }, [setId, testMode]);
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-2xl mb-2">♟️</div>
+          <div>Puzzle yükleniyor...</div>
         </div>
-        <div className="puzzle-layout flex flex-col md:flex-row items-center gap-8 w-full">
-          <div className="flex-shrink-0">
-            <Chessboard
-              position={boardPosition}
-              onSquareClick={handleSquareClick}
-              customSquareStyles={getSquareStyles()}
-              boardWidth={340}
-              boardOrientation="white"
-              className="rounded-xl shadow-md border border-indigo-100"
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-red-500 text-2xl mb-2">⚠️</div>
+          <div className="text-red-600">{error}</div>
+          <button 
+            onClick={() => navigate('/')}
+            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded"
+          >
+            Ana Sayfaya Dön
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Dynamic move info with auto-play support
+  const getMoveInfo = () => {
+    if (puzzleState.isAutoPlaying) {
+      return (
+        <div className="text-lg font-medium text-gray-600">
+          <span className="inline-block animate-pulse">🤖 Computer thinking...</span>
+        </div>
+      );
+    }
+    
+    if (puzzleState.isComplete) {
+      return (
+        <div className="text-lg font-medium text-green-600">
+          ✅ Puzzle Complete! 
+          {puzzleState.currentPuzzleIndex < puzzleState.totalPuzzles - 1 && (
+            <span className="text-sm block">Next puzzle in 2 seconds...</span>
+          )}
+        </div>
+      );
+    }
+    
+    if (!puzzleState.isWaitingForUser) {
+      return (
+        <div className="text-lg font-medium text-orange-600">
+          ⏳ Waiting for computer move...
+        </div>
+      );
+    }
+    
+    const nextMove = puzzleState.expectedMoves[0];
+    return (
+      <div className="text-lg font-medium">
+        Expected Move: <span className="text-blue-600">
+          {nextMove?.move || 'Loading...'}
+        </span>
+      </div>
+    );
+  };
+
+  // Success state - Main puzzle interface
+  return (
+    <div className="min-h-screen bg-gray-50 p-4">
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="mb-6 text-center">
+          <h1 className="text-2xl font-bold text-gray-800 mb-2">
+            {puzzleSet?.smartCode || puzzleSet?.id} - Puzzle {puzzleState.currentPuzzleIndex + 1}/{puzzleState.totalPuzzles}
+          </h1>
+          <div className="text-sm text-gray-600">
+            Moves played: {puzzleState.moveHistory.length}
+          </div>
+        </div>
+
+        {/* Main content */}
+        <div className="flex flex-col lg:flex-row gap-6 items-start">
+          {/* Board */}
+          <div className="flex-1 flex justify-center">
+            <PuzzleBoard
+              position={puzzleState.boardPosition}
+              onMove={handleBoardMove}
+              boardWidth={Math.min(500, window.innerWidth - 100)}
+              boardKey={boardKey}
             />
           </div>
-          <div className="puzzle-controls flex flex-col gap-3 w-full md:w-48">
-            <button onClick={showHint} disabled={puzzleCompleted}
-              className="bg-yellow-400 hover:bg-yellow-500 text-white font-semibold py-2 px-4 rounded-lg shadow transition disabled:opacity-50 disabled:cursor-not-allowed">
-              İpucu Göster
-            </button>
-            <button onClick={() => setupPuzzle(activePuzzle)}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg shadow transition">
-              Yeniden Başlat
-            </button>
-            <button onClick={() => window.history.back()}
-              className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-2 px-4 rounded-lg shadow transition">
-              Puzzle Listesine Dön
-            </button>
-            <button onClick={() => window.location.href = '/'}
-              className="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2 px-4 rounded-lg shadow transition">
-              Ana Sayfaya Dön
-            </button>
+
+          {/* Info panel */}
+          <div className="lg:w-80 space-y-4">
+            {/* Move info */}
+            <div className="bg-white p-4 rounded-lg shadow-sm">
+              <h3 className="font-bold mb-2">Move Status</h3>
+              {getMoveInfo()}
+              <div className="text-sm text-gray-600 mt-2">
+                {puzzleState.isWaitingForUser && !puzzleState.isComplete && 
+                  'Your turn - Click or drag pieces to move'}
+              </div>
+            </div>
+
+            {/* Controls */}
+            <div className="bg-white p-4 rounded-lg shadow-sm">
+              <h3 className="font-bold mb-3">Controls</h3>
+              <div className="space-y-2">
+                <button 
+                  onClick={handleReset}
+                  disabled={puzzleState.isAutoPlaying}
+                  className="w-full px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
+                >
+                  🔄 Reset Puzzle
+                </button>
+                <button 
+                  onClick={() => navigate('/')}
+                  className="w-full px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+                >
+                  🏠 Home
+                </button>
+              </div>
+            </div>
+
+            {/* Move history */}
+            <div className="bg-white p-4 rounded-lg shadow-sm">
+              <h3 className="font-bold mb-2">Move History</h3>
+              <div className="text-sm space-y-1">
+                {puzzleState.moveHistory.map((move, index) => (
+                  <div key={index} className="flex justify-between">
+                    <span>{Math.floor(index / 2) + 1}.</span>
+                    <span>{move}</span>
+                  </div>
+                ))}
+                {puzzleState.moveHistory.length === 0 && (
+                  <div className="text-gray-500 italic">No moves yet</div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>
