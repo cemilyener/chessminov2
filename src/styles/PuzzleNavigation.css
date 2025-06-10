@@ -1,0 +1,275 @@
+.puzzle-navigation {
+  width: 100%;
+  margin: 1rem 0;
+}
+
+.puzzle-navigation--disabled {
+  pointer-events: none;
+}
+
+.puzzle-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 0.5rem;
+  max-width: 300px;
+  margin: 0 auto;
+}
+
+.puzzle-cell {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  border: 2px solid;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: white;
+}
+
+.puzzle-cell:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.puzzle-cell:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.puzzle-cell--navigating {
+  opacity: 0.6;
+  cursor: wait !important;
+}
+
+/* Status Colors */
+.puzzle-cell--completed {
+  background: #10b981; /* Green */
+  border-color: #059669;
+  color: white;
+}
+
+.puzzle-cell--current {
+  background: #3b82f6; /* Blue */
+  border-color: #2563eb;
+  color: white;
+  animation: pulse 2s infinite;
+}
+
+.puzzle-cell--available {
+  background: #f3f4f6; /* Light gray */
+  border-color: #9ca3af;
+  color: #374151;
+}
+
+.puzzle-cell--available:hover {
+  background: #e5e7eb;
+  border-color: #6b7280;
+}
+
+.puzzle-cell--locked {
+  background: #f9fafb; /* Very light gray */
+  border-color: #d1d5db;
+  color: #9ca3af;
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Icons */
+.puzzle-number {
+  font-size: 0.75rem;
+}
+
+.puzzle-checkmark {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: #059669;
+  color: white;
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6rem;
+  font-weight: bold;
+}
+
+.puzzle-indicator {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: #2563eb;
+  color: white;
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  animation: pulse 1.5s infinite;
+}
+
+/* Animations */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* Loading animation */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Responsive Design */
+@media (max-width: 480px) {
+  .puzzle-grid {
+    grid-template-columns: repeat(6, 1fr);
+    gap: 0.25rem;
+    max-width: 250px;
+  }
+  
+  .puzzle-cell {
+    width: 32px;
+    height: 32px;
+    font-size: 0.75rem;
+  }
+  
+  .puzzle-checkmark,
+  .puzzle-indicator {
+    width: 12px;
+    height: 12px;
+    font-size: 0.5rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .puzzle-grid {
+    max-width: 360px;
+  }
+  
+  .puzzle-cell {
+    width: 48px;
+    height: 48px;
+    font-size: 1rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .puzzle-grid {
+    max-width: 400px;
+  }
+  
+  .puzzle-cell {
+    width: 52px;
+    height: 52px;
+  }
+}
+
+/* YENİ: Compact Mode for Mobile */
+.puzzle-navigation.compact .puzzle-grid {
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0.25rem;
+  max-width: 240px;
+  margin: 0 auto;
+}
+
+.puzzle-navigation.compact .puzzle-cell {
+  width: 32px;
+  height: 32px;
+  font-size: 0.75rem;
+  border-width: 1px;
+}
+
+.puzzle-navigation.compact .puzzle-checkmark,
+.puzzle-navigation.compact .puzzle-indicator {
+  width: 10px;
+  height: 10px;
+  font-size: 0.5rem;
+  top: -2px;
+  right: -2px;
+}
+
+/* Mobile specific adjustments */
+@media (max-width: 480px) {
+  .puzzle-navigation.compact .puzzle-grid {
+    max-width: 200px;
+    gap: 0.15rem;
+  }
+  
+  .puzzle-navigation.compact .puzzle-cell {
+    width: 28px;
+    height: 28px;
+    font-size: 0.7rem;
+  }
+}
+
+/* Tablet adjustments */
+@media (min-width: 768px) {
+  .puzzle-navigation.compact .puzzle-grid {
+    max-width: 280px;
+  }
+  
+  .puzzle-navigation.compact .puzzle-cell {
+    width: 38px;
+    height: 38px;
+    font-size: 0.8rem;
+  }
+}
+
+/* YENİ: Toggle Button Animations */
+.navigation-toggle {
+  position: relative;
+  overflow: hidden;
+}
+
+.navigation-toggle::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: width 0.3s, height 0.3s;
+}
+
+.navigation-toggle:active::before {
+  width: 100px;
+  height: 100px;
+}
+
+/* YENİ: Board responsive sizing */
+@media (max-width: 480px) {
+  .puzzle-board-container {
+    margin: 0;
+    padding: 0.5rem;
+  }
+}
+
+@media (min-width: 481px) and (max-width: 768px) {
+  .puzzle-board-container {
+    padding: 1rem;
+  }
+}

@@ -1,36 +1,52 @@
 // src/hooks/usePuzzleState.js - VARIANT TRACKING EKLENMİŞ VERSİYON
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { Chess } from 'chess.js';
-import { parseSANtoMoveObject } from '../utils/chess/SANParser';
+
+// 1. Computer move delay'i ayarlanabilir yap
+const DEFAULT_COMPUTER_MOVE_DELAY = process.env.NODE_ENV === 'development' ? 300 : 800; // Debug'da hızlı
+
+// 2. Console.log'ları production'da kapat
+const debugLog = (...args) => {
+  if (process.env.NODE_ENV === 'development') {
+    console.log(...args);
+  }
+};
 
 const usePuzzleState = (puzzleSet) => {
-  // Mevcut state'ler...
   const [currentPuzzleIndex, setCurrentPuzzleIndex] = useState(0);
   const [currentMoveIndex, setCurrentMoveIndex] = useState(0);
-  const [game] = useState(() => new Chess());
-  const [boardPosition, setBoardPosition] = useState('start');
+  const [boardPosition, setBoardPosition] = useState('');
   const [isComplete, setIsComplete] = useState(false);
+  const [lastMoveResult, setLastMoveResult] = useState(null); // 'correct', 'incorrect', 'illegal', 'error'
   const [moveHistory, setMoveHistory] = useState([]);
-  const [lastMoveResult, setLastMoveResult] = useState(null);
-  const [isAutoPlaying, setIsAutoPlaying] = useState(false);
+  const [isAutoPlaying, setIsAutoPlaying] = useState(false); // Bilgisayar hamlesi sırasında true
   const [isWaitingForUser, setIsWaitingForUser] = useState(true);
   
-  // ⭐ YENİ: Variant tracking states
-  const [currentPath, setCurrentPath] = useState('main'); // 'main' veya 'variant_a'
+  const [currentPath, setCurrentPath] = useState('main');
   const [variantMoveIndex, setVariantMoveIndex] = useState(0);
-
-  // ⭐ YENİ: Beklenen hamleleri state olarak tut
   const [expectedMovesList, setExpectedMovesList] = useState([]);
-  
+
+  // 3. Fast mode toggle
+  const [fastMode, setFastMode] = useState(false);
+  const [computerMoveDelay, setComputerMoveDelay] = useState(DEFAULT_COMPUTER_MOVE_DELAY);
+
+  useEffect(() => {
+    setComputerMoveDelay(fastMode ? 100 : DEFAULT_COMPUTER_MOVE_DELAY);
+  }, [fastMode]);
+
+  const game = useRef(new Chess()).current;
+  const autoPlayTimeoutRef = useRef(null);
+
   // Ref for latest values
   const stateRef = useRef({
-    currentMoveIndex: 0,
-    currentPuzzle: null,
-    currentPath: 'main',
-    variantMoveIndex: 0,
-    isAutoPlaying: false,
-    isWaitingForUser: true, // Varsayılan olarak true, initializePuzzle güncelleyecek
-    isComplete: false
+    currentMoveIndex,
+    currentPuzzle: puzzleSet?.puzzles?.[currentPuzzleIndex], // Initialize with currentPuzzle
+    currentPath,
+    variantMoveIndex,
+    isAutoPlaying,
+    isWaitingForUser,
+    isComplete,
+    // fastMode da eklenebilir eğer callback'ler içinde doğrudan erişim gerekiyorsa
   });
 
   const currentPuzzle = puzzleSet?.puzzles?.[currentPuzzleIndex];
@@ -44,24 +60,11 @@ const usePuzzleState = (puzzleSet) => {
       currentPath,
       variantMoveIndex,
       isAutoPlaying,
-      isWaitingForUser, // EKLENDİ
-      isComplete      // EKLENDİ
+      isWaitingForUser,
+      isComplete,
     };
-  }, [currentMoveIndex, currentPuzzle, currentPath, variantMoveIndex, isAutoPlaying, isWaitingForUser, isComplete]); // EKLENEN BAĞIMLILIKLAR
+  }, [currentMoveIndex, currentPuzzle, currentPath, variantMoveIndex, isAutoPlaying, isWaitingForUser, isComplete]);
 
-  // Timeout management
-  const autoPlayTimeoutRef = useRef(null);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (autoPlayTimeoutRef.current) {
-        clearTimeout(autoPlayTimeoutRef.current);
-      }
-    };
-  }, []);
-  
-  // Clear auto-play timeout
   const clearAutoPlayTimeout = useCallback(() => {
     if (autoPlayTimeoutRef.current) {
       clearTimeout(autoPlayTimeoutRef.current);
@@ -69,41 +72,62 @@ const usePuzzleState = (puzzleSet) => {
     }
   }, []);
 
-  // ⭐ YENİ: Get current move line (main or variant)
-  const getCurrentMoveLine = useCallback(() => {
-    const { currentPath: path, currentPuzzle: puzzle } = stateRef.current;
-    
+  const getMoveLineAndIndex = useCallback(() => {
+    const {
+      currentPath: path,
+      currentMoveIndex: mainIdx,
+      variantMoveIndex: varIdx,
+      currentPuzzle: puzzle,
+    } = stateRef.current;
+
+    if (!puzzle) return { moveLine: null, moveIndexToPlay: -1 };
+
+    let moveLine = null;
+    let moveIndexToPlay = -1;
+
     if (path === 'main') {
-      return puzzle?.mainLine || [];
+      moveLine = puzzle.mainLine;
+      moveIndexToPlay = mainIdx;
     } else {
-      const variant = puzzle?.alternatives?.find(alt => alt.name === path);
-      return variant?.moves || [];
+      const variant = puzzle.alternatives?.find(alt => alt.name === path);
+      if (variant) {
+        moveLine = variant.moves;
+        moveIndexToPlay = varIdx;
+      }
     }
-  }, []); // stateRef.current okumaları için bağımlılık gerekmez
+    return { moveLine, moveIndexToPlay };
+  }, []); // stateRef.current'a dayandığı için bağımlılıkları boş olabilir veya stateRef'in kendisine olabilir.
 
-  // ⭐ YENİ: Get current move index based on path
-  const getCurrentMoveIndex = useCallback(() => {
-    const { currentPath: path, currentMoveIndex: mainIndex, variantMoveIndex: varIndex } = stateRef.current;
-    return path === 'main' ? mainIndex : varIndex;
-  }, []); // stateRef.current okumaları için bağımlılık gerekmez
+  // Helper function to parse SAN notation - TANIMI BURAYA TAŞIYIN
+  const parseSANtoMoveObject = useCallback((san, gameInstance) => {
+    try {
+      const moves = gameInstance.moves({ verbose: true });
+      return moves.find(move => move.san === san) || null;
+    } catch (error) {
+      console.error('Error parsing SAN:', error);
+      return null;
+    }
+  }, []); // Bağımlılık dizisi boş kalabilir, çünkü dışarıdan bir şey kullanmıyor.
 
-  // ⭐ UPDATED: Get expected moves with variant support
-  // useCallback sarmalayıcısı kaldırıldı, böylece her zaman en güncel state'lere erişir.
-  const getExpectedMoves = () => { 
+  const getExpectedMoves = useCallback(() => {
     const { currentPath: path, currentMoveIndex: mainIndex, variantMoveIndex: varIndex, currentPuzzle: puzzle } = stateRef.current;
-    
+    // YENİ DEBUG: Destructuring sonrası varIndex'i kontrol et
+    debugLog('[getExpectedMoves] After destructuring stateRef - path:', path, 'mainIndex:', mainIndex, 'varIndex:', varIndex, 'puzzle exists:', !!puzzle);
+
     if (!puzzle) {
       console.warn('getExpectedMoves called with no puzzle in stateRef');
       return [];
     }
     
     const moves = [];
-    
+    let currentIndexForLog; 
+
     if (path === 'main') {
+      currentIndexForLog = mainIndex; 
       // Ana hattaki bir sonraki beklenen hamle
-      if (puzzle.mainLine && mainIndex < puzzle.mainLine.length) { // mainIndex kontrolü eklendi
+      if (puzzle.mainLine && mainIndex < puzzle.mainLine.length) {
         const mainMove = puzzle.mainLine[mainIndex];
-        if (mainMove && mainMove.move) { // mainMove ve mainMove.move var mı kontrol et
+        if (mainMove && mainMove.move) {
           moves.push({
             move: mainMove.move,
             type: 'main',
@@ -113,104 +137,138 @@ const usePuzzleState = (puzzleSet) => {
           console.warn('Main move or mainMove.move is undefined at index:', mainIndex, puzzle.mainLine);
         }
       } else if (puzzle.mainLine) {
-         console.log('No more moves in mainLine or mainIndex out of bounds. mainIndex:', mainIndex, 'mainLine length:', puzzle.mainLine.length);
+         debugLog('No more moves in mainLine or mainIndex out of bounds. mainIndex:', mainIndex, 'mainLine length:', puzzle.mainLine.length);
       }
 
       // Bu ana hamle için alternatif başlangıç hamleleri
+      // mainIndex burada bir sonraki hamlenin indeksi olduğu için, parentMoveIndex'in mainIndex - 1 olması gerekir
+      // Eğer kullanıcı bir hamle yaptıysa ve sıra bilgisayardaysa, mainIndex bir sonraki bilgisayar hamlesini gösterir.
+      // Eğer sıra kullanıcıdaysa, mainIndex kullanıcının yapacağı hamleyi gösterir.
+      // Alternatifler, kullanıcının yapabileceği hamleler olduğu için, o anki mainIndex'e göre (eğer sıra kullanıcıdaysa)
+      // veya bir önceki hamlenin indeksine göre (eğer sıra bilgisayardaysa ve kullanıcı bir önceki hamleyi yaptıysa) belirlenmeli.
+      // Şu anki mantıkta getExpectedMoves, kullanıcının yapabileceği hamleleri döndürüyor.
+      // Bu durumda, parentMoveIndex, bir önceki hamlenin indeksi olmalı.
+      // Eğer mainIndex = 0 (ilk hamle) ise, parentMoveIndex = -1 (bu durumda alternatif olmaz)
+      // Eğer mainIndex = 1 (ikinci hamle) ise, parentMoveIndex = 0 (ilk hamleden sonraki alternatifler)
+      // Bu nedenle, `alt.parentMoveIndex === mainIndex` mantığı, eğer mainIndex bir sonraki *yapılacak* hamleyi gösteriyorsa
+      // ve alternatifler bu yapılacak hamle yerine geçiyorsa doğru olabilir.
+      // Ancak, JSON yapınızda parentMoveIndex'in tam olarak neyi ifade ettiğini (0-tabanlı önceki hamlenin indeksi mi, yoksa başka bir şey mi)
+      // netleştirmek önemli. Genellikle bir önceki hamlenin indeksi olur.
+      // Şimdilik mevcut `alt.parentMoveIndex === mainIndex` mantığını koruyorum, ancak bu JSON yapınıza göre gözden geçirilmeli.
       puzzle.alternatives?.forEach(alt => {
-        if (alt.parentMoveIndex === mainIndex && alt.moves && alt.moves.length > 0 && alt.moves[0].move) { // alt.moves ve alt.moves[0].move kontrolü
+        if (alt.parentMoveIndex === mainIndex && alt.moves && alt.moves.length > 0 && alt.moves[0].move) {
           moves.push({
             move: alt.moves[0].move,
             type: 'variant',
             variantName: alt.name,
-            // variant: alt // Tüm variant objesini taşımak yerine sadece gerekli bilgileri taşıyabiliriz
-            isLast: alt.moves[0].isLast // Varyantın ilk hamlesinin isLast durumu
+            isLast: alt.moves[0].isLast
           });
         }
       });
     } else { // Varyant yolundayız
+      // DÜZELTİLMİŞ SATIRLAR: varIdx -> varIndex
+      debugLog('[getExpectedMoves] In variant path. varIndex from destructuring:', varIndex, 'Path:', path); 
+      currentIndexForLog = varIndex; 
       const variant = puzzle.alternatives?.find(alt => alt.name === path);
-      if (variant && variant.moves && varIndex < variant.moves.length) { // varIndex kontrolü eklendi
-        const variantMove = variant.moves[varIndex];
-        if (variantMove && variantMove.move) { // variantMove ve variantMove.move var mı kontrol et
+      if (variant && variant.moves && varIndex < variant.moves.length) { // varIndex burada doğru kullanılmış
+        const variantMove = variant.moves[varIndex]; // varIndex burada doğru kullanılmış
+        if (variantMove && variantMove.move) {
           moves.push({
             move: variantMove.move,
             type: 'variant-continuation',
             isLast: variantMove.isLast
           });
         } else {
-          console.warn('Variant move or variantMove.move is undefined at index:', varIndex, variant.moves);
+          console.warn('Variant move or variantMove.move is undefined at index:', varIndex, variant.moves); // varIndex burada doğru kullanılmış
         }
       } else if (variant && variant.moves) {
-        console.log('No more moves in variant path or varIndex out of bounds. varIndex:', varIndex, 'variant moves length:', variant.moves.length);
+        debugLog('No more moves in variant path or varIndex out of bounds. varIndex:', varIndex, 'variant moves length:', variant.moves.length); // varIndex burada doğru kullanılmış
+      } else if (!variant) {
+        debugLog('[getExpectedMoves] Variant not found for path:', path);
       }
     }
     
-    // Loglamayı fonksiyonun içine taşıdım ve daha detaylı hale getirdim
-    console.log(`🎯 getExpectedMoves (Path: ${path}, Index: ${path === 'main' ? mainIndex : varIndex}):`, moves.map(m => `${m.move} (${m.type}, last: ${m.isLast})`));
+    if (typeof currentIndexForLog === 'undefined') {
+        const currentVarIdx = stateRef.current.variantMoveIndex; 
+        debugLog('[getExpectedMoves] ERROR: currentIndexForLog is undefined. Path:', path, 'mainIndex:', mainIndex, 'currentVarIdx from stateRef (direct):', currentVarIdx);
+    }
+    const finalLogPath = stateRef.current.currentPath;
+    const finalLogIndex = finalLogPath === 'main' ? stateRef.current.currentMoveIndex : stateRef.current.variantMoveIndex;
+
+    debugLog('🎯 getExpectedMoves (Path:', finalLogPath, 'Index:', finalLogIndex, '):', moves.map(m => `${m.move} (${m.type}, last: ${m.isLast})`));
     
     return moves;
-  };
+  }, [game]);
 
-  // ⭐ YENİ: Beklenen hamleleri güncellemek için useEffect
   useEffect(() => {
-    if (stateRef.current.currentPuzzle) { // Sadece puzzle varsa güncelle
+    if (stateRef.current.currentPuzzle) {
       setExpectedMovesList(getExpectedMoves());
+    } else {
+      setExpectedMovesList([]); // Puzzle yoksa boşalt
     }
-  }, [currentMoveIndex, currentPath, variantMoveIndex, currentPuzzle]); // currentPuzzle da eklendi, getExpectedMoves onu kullanıyor
+  }, [currentMoveIndex, currentPath, variantMoveIndex, currentPuzzle, getExpectedMoves]);
 
-  // ⭐ UPDATED: Computer move with variant support (ÖNCE TANIMLA)
+
   const playComputerMove = useCallback(() => {
     // stateRef'ten en güncel değerleri al
     const { currentMoveIndex: mainIndex, variantMoveIndex: varIndex, currentPath: path, currentPuzzle: puzzle, isAutoPlaying: autoPlayingStatus } = stateRef.current;
     
-    if (!puzzle || autoPlayingStatus) { // ref'teki isAutoPlaying'i kontrol et
-        console.log('🚫 Computer move cancelled - already playing or no puzzle');
+    if (!puzzle || autoPlayingStatus) { 
+        debugLog('🚫 Computer move cancelled - already playing or no puzzle. Status:', { autoPlayingStatus, puzzleExists: !!puzzle });
         return;
     }
     
-    const moveLine = path === 'main' ? puzzle.mainLine : puzzle.alternatives?.find(alt => alt.name === path)?.moves;
-    const moveIndexToPlay = path === 'main' ? mainIndex : varIndex; // Değişken adını değiştirdim karışıklığı önlemek için
-    
+    const { moveLine, moveIndexToPlay } = getMoveLineAndIndex();
     if (!moveLine || moveIndexToPlay >= moveLine.length) {
-        console.log('🚫 No more moves in current path');
+        debugLog('🚫 No more moves in current path for computer. Path:', path, 'Index:', moveIndexToPlay, 'Line Length:', moveLine?.length);
+        setIsWaitingForUser(true); 
         return;
     }
     
     const nextMove = moveLine[moveIndexToPlay];
-    if (!nextMove) return;
+    if (!nextMove || !nextMove.move) { 
+        debugLog('🚫 Invalid nextMove object for computer.', nextMove);
+        setIsWaitingForUser(true); 
+        return;
+    }
 
-    setIsAutoPlaying(true); // Bu, bir sonraki render'da hook'un yeniden çalışmasını tetikleyebilir
-    // stateRef.current.isAutoPlaying = true; // useEffect içinde zaten güncelleniyor
+    setIsAutoPlaying(true); 
 
-    console.log(`🤖 Computer will play: ${nextMove.move} (${path} path, index ${moveIndexToPlay})`);
+    debugLog('🤖 Computer will play:', nextMove.move, `(${stateRef.current.currentPath} path, index ${moveIndexToPlay})`);
 
     autoPlayTimeoutRef.current = setTimeout(() => {
       try {
-        let moveResult = null; // 'move' yerine 'moveResult' kullandım, chess.js'den dönen obje için
+        let moveResult = null; 
         
         try {
           moveResult = game.move(nextMove.move);
         } catch (e) {
-          const parsed = parseSANtoMoveObject(nextMove.move, game);
+          debugLog('Computer move with SAN failed, trying parseSANtoMoveObject. Error:', e);
+          // ŞİMDİ parseSANtoMoveObject GÜVENLE ÇAĞRILABİLİR
+          const parsed = parseSANtoMoveObject(nextMove.move, game); 
           if (parsed) {
+            debugLog('Parsed SAN to object:', parsed);
             moveResult = game.move(parsed);
           } else if (nextMove.fen) {
-            game.load(nextMove.fen); // FEN yüklemesi sonrası tahta güncellenir
-            setBoardPosition(game.fen()); // FEN yüklendikten sonra boardPosition'ı hemen güncelle
-            moveResult = { san: nextMove.move }; // chess.js move objesine benzer bir yapı
+            debugLog('Falling back to FEN load for computer move:', nextMove.fen);
+            game.load(nextMove.fen); 
+            setBoardPosition(game.fen()); 
+            moveResult = { san: nextMove.move, fen: nextMove.fen }; 
+          } else {
+            debugLog('Computer move failed completely for:', nextMove.move);
           }
         }
 
-        if (moveResult) {
-          console.log(`🤖 Computer played: ${moveResult.san} on ${path} path`);
-          // FEN fallback durumunda setBoardPosition zaten yapıldı
-          if (!nextMove.fen) { 
+        if (moveResult && moveResult.san) { // moveResult ve moveResult.san varlığını kontrol et
+          debugLog('🤖 Computer played:', moveResult.san, `on ${stateRef.current.currentPath} path`);
+          
+          // FEN fallback durumunda setBoardPosition zaten timeout içinde yapıldı,
+          // diğer durumlarda (başarılı game.move) setBoardPosition burada yapılmalı.
+          if (!nextMove.fen || (nextMove.fen && moveResult.fen !== nextMove.fen)) { // Eğer FEN fallback değilse veya FEN fallback ama moveResult'ta FEN yoksa
             setBoardPosition(game.fen());
           }
           setMoveHistory(prev => [...prev, moveResult.san]);
           
-          // Index'leri stateRef'ten alınan güncel değerlere göre artır
           if (path === 'main') {
             setCurrentMoveIndex(mainIndex + 1);
           } else {
@@ -219,22 +277,24 @@ const usePuzzleState = (puzzleSet) => {
           
           if (nextMove.isLast) {
             setIsComplete(true);
-            console.log('🎉 Puzzle complete!');
+            debugLog('🎉 Puzzle complete by computer!');
           } else {
             setIsWaitingForUser(true);
           }
+        } else {
+          debugLog('Computer move resulted in null or no SAN. Move attempted:', nextMove.move, 'Result:', moveResult);
+          setIsWaitingForUser(true);
         }
       } catch (error) {
-        console.error('Computer move error:', error);
+        console.error('Computer move execution error:', error);
+        setIsWaitingForUser(true); 
       } finally {
         setIsAutoPlaying(false);
-        // stateRef.current.isAutoPlaying = false; // useEffect içinde zaten güncelleniyor
-        autoPlayTimeoutRef.current = null; // Timeout referansını temizle
+        autoPlayTimeoutRef.current = null; 
       }
-    }, 800);
-  }, [game, parseSANtoMoveObject]); // isAutoPlaying'i bağımlılıktan çıkardık, ref kullanıyoruz
+    }, computerMoveDelay); 
+  }, [game, getMoveLineAndIndex, computerMoveDelay, parseSANtoMoveObject]); // parseSANtoMoveObject şimdi bağımlılık olarak doğru çalışacak
 
-  // Initialize puzzle (playComputerMove'dan SONRA TANIMLA)
   const initializePuzzle = useCallback(() => {
     if (!currentPuzzle) return;
 
@@ -251,11 +311,11 @@ const usePuzzleState = (puzzleSet) => {
       setLastMoveResult(null);
       setIsAutoPlaying(false); // Başlangıçta autoPlaying false olmalı
       
-      console.log('🎯 Puzzle initialized:', currentPuzzle.id);
+      debugLog('🎯 Puzzle initialized:', currentPuzzle.id);
       
       // HER ZAMAN İLK HAMLE KULLANICIDA OLACAK ŞEKİLDE AYARLA
       setIsWaitingForUser(true);
-      console.log('🎮 First move: USER (regardless of FEN turn)');
+      debugLog('🎮 First move: USER (regardless of FEN turn)');
       
       // Bilgisayarın otomatik ilk hamle yapmasını sağlayan kısım kaldırıldı.
       // const firstMoveTurn = game.turn();
@@ -268,19 +328,23 @@ const usePuzzleState = (puzzleSet) => {
     } catch (error) {
       console.error('Puzzle initialization error:', error);
     }
-  }, [currentPuzzle, game, clearAutoPlayTimeout]); // playComputerMove bağımlılıktan çıkarıldı, çünkü artık başlangıçta çağrılmıyor.
+  }, [currentPuzzle, game, clearAutoPlayTimeout, getExpectedMoves]); // getExpectedMoves eklendi (useEffect içinde kullanılıyor)
 
-  // ⭐ UPDATED: User move with variant switching
   const makeMove = useCallback((moveData) => {
-    // stateRef'ten en güncel değerleri al
-    const { isAutoPlaying: autoPlayingStatus, isWaitingForUser: waitingStatus, isComplete: completeStatus, currentMoveIndex: refCurrentMoveIndex, variantMoveIndex: refVariantMoveIndex, currentPath: refCurrentPath } = stateRef.current;
+    const {
+      isAutoPlaying: autoPlaying,
+      isWaitingForUser: waitingUser,
+      isComplete: puzzleCompleted,
+      currentPuzzle: puzzle,
+      currentMoveIndex: refCurrentMoveIndex, // stateRef'ten güncel index'leri al
+      variantMoveIndex: refVariantMoveIndex, // stateRef'ten güncel index'leri al
+      currentPath: refCurrentPath // stateRef'ten güncel path'i al
+    } = stateRef.current;
 
-    // HATA AYIKLAMA LOGLARI BAŞLANGICI
-    console.log('[makeMove] State check at entry: autoPlaying:', autoPlayingStatus, 'waitingForUser:', waitingStatus, 'isComplete:', completeStatus);
-    // HATA AYIKLAMA LOGLARI SONU
+    debugLog('[makeMove] State check at entry:', { autoPlaying, waitingUser, puzzleCompleted });
 
-    if (autoPlayingStatus || !waitingStatus || completeStatus) {
-      console.log('[makeMove] Rejected by initial state check. Conditions: autoPlayingStatus:', autoPlayingStatus, '!waitingStatus:', !waitingStatus, 'completeStatus:', completeStatus);
+    if (autoPlaying || !waitingUser || puzzleCompleted) {
+      console.log('[makeMove] Rejected by initial state check. Conditions: autoPlayingStatus:', autoPlaying, '!waitingStatus:', !waitingUser, 'completeStatus:', puzzleCompleted);
       return false;
     }
 
@@ -300,12 +364,9 @@ const usePuzzleState = (puzzleSet) => {
 
       const expected = getExpectedMoves();
 
-      // DEBUG LOGS BAŞLANGICI (Zaten vardı, kontrol için bırakıldı)
-      console.log('--- makeMove DEBUG ---');
-      console.log('User SAN:', testMove.san);
-      console.log('Expected SANs:', expected.map(e => e.move));
-      // console.log('Full expected objects:', JSON.stringify(expected, null, 2)); // Çok uzun olabilir, gerekirse açın
-      // DEBUG LOGS SONU
+      debugLog('--- makeMove DEBUG ---');
+      debugLog('User SAN:', testMove.san);
+      debugLog('Expected SANs:', expected.map(e => e.move));
 
       const matchedMove = expected.find(em => em.move === testMove.san);
 
@@ -316,57 +377,62 @@ const usePuzzleState = (puzzleSet) => {
           promotion: moveData.promotion || 'q'
         });
 
-        console.log(`✅ User played: ${actualMove.san} (${matchedMove.type})`);
+        debugLog(`✅ User played: ${actualMove.san} (${matchedMove.type})`);
         setBoardPosition(game.fen());
         setMoveHistory(prev => [...prev, actualMove.san]);
         setLastMoveResult('correct');
         
         if (matchedMove.type === 'variant' && matchedMove.variantName) {
-          console.log(`🔀 Switching to variant: ${matchedMove.variantName}`);
+          debugLog(`🔀 Switching to variant: ${matchedMove.variantName}`);
           setCurrentPath(matchedMove.variantName);
           setVariantMoveIndex(1); 
-        } else if (refCurrentPath === 'main') {
-          setCurrentMoveIndex(refCurrentMoveIndex + 1);
-        } else {
-          setVariantMoveIndex(refVariantMoveIndex + 1);
+        } else { // Ana hat veya varyant devamı
+          if (refCurrentPath === 'main') { // stateRef'ten alınan güncel path'i kullan
+            setCurrentMoveIndex(refCurrentMoveIndex + 1);
+          } else { // Varyant devamı
+            setVariantMoveIndex(refVariantMoveIndex + 1);
+          }
         }
         
         setIsWaitingForUser(false);
-
         if (matchedMove.isLast) {
           setIsComplete(true);
-          console.log('🎉 Puzzle complete!');
+          debugLog('🎉 Puzzle complete!');
         } else {
-          autoPlayTimeoutRef.current = setTimeout(() => playComputerMove(), 1000);
+          // playComputerMove çağrısını computerMoveDelay ile yap
+          autoPlayTimeoutRef.current = setTimeout(() => playComputerMove(), computerMoveDelay);
         }
         
         return true;
       } else {
-        console.log('❌ Wrong move:', testMove.san);
-        console.log('Expected:', expected.map(e => e.move));
+        debugLog(`❌ Wrong move: ${testMove.san}`);
+        debugLog('Expected:', expected.map(e => e.move));
         setLastMoveResult('incorrect');
         return false;
       }
     } catch (error) {
       console.error('Move error:', error);
-      setLastMoveResult('error'); // Hata durumunda lastMoveResult'ı ayarla
+      setLastMoveResult('error');
       return false;
     }
-  }, [game, getExpectedMoves, playComputerMove]); // state'ler yerine ref ve fonksiyonlar bağımlılıkta
+  }, [game, playComputerMove, getExpectedMoves, computerMoveDelay]); // computerMoveDelay bağımlılığa eklendi
 
-  // Navigation functions...
+  // Navigation functions
   const resetPuzzle = useCallback(() => {
     initializePuzzle();
-  }, [initializePuzzle]); // initializePuzzle bağımlılığı doğru
+  }, [initializePuzzle]);
 
   // Initialize on mount
   useEffect(() => {
-    // currentPuzzle değiştiğinde initializePuzzle'ı çağır
     if (currentPuzzle) {
-        initializePuzzle();
+      initializePuzzle();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps 
-  }, [currentPuzzleIndex, initializePuzzle]); // initializePuzzle'ı bağımlılığa ekle
+  }, [currentPuzzleIndex, initializePuzzle]);
+
+  // Toggle fast mode
+  const toggleFastMode = useCallback(() => {
+    setFastMode(prev => !prev);
+  }, []);
 
   return {
     // States
@@ -375,24 +441,23 @@ const usePuzzleState = (puzzleSet) => {
     currentMoveIndex,
     totalPuzzles,
     boardPosition,
-    isComplete,
+    isComplete, // <<--- BU SATIRIN OLDUĞUNDAN EMİN OLUN
     lastMoveResult,
     moveHistory,
-    // expectedMoves: getExpectedMoves(), // ESKİ YÖNTEM
-    expectedMoves: expectedMovesList, // YENİ YÖNTEM: State'ten al
+    expectedMoves: expectedMovesList,
     isAutoPlaying,
     isWaitingForUser,
-    currentPath, 
-    variantMoveIndex, 
+    currentPath,
+    variantMoveIndex,
+    fastMode,
     // Methods
     makeMove,
     nextPuzzle: () => setCurrentPuzzleIndex(p => Math.min(p + 1, totalPuzzles - 1)),
     previousPuzzle: () => setCurrentPuzzleIndex(p => Math.max(p - 1, 0)),
     resetPuzzle,
-    // getCurrentMoveLine ve getCurrentMoveIndex zaten stateRef kullandığı için her zaman günceldir.
-    // Eğer dışarıya verilecekse ve useCallback ile sarmalanmışlarsa, bağımlılıkları olmamalıdır.
-    getCurrentMoveLine, 
-    getCurrentMoveIndex 
+    toggleFastMode,
+    getMoveLineAndIndex,
+    getExpectedMoves,
   };
 };
 

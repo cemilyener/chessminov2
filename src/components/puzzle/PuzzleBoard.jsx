@@ -5,10 +5,12 @@ import { Chessboard } from 'react-chessboard';
 const PuzzleBoard = ({ 
   position, 
   onMove, 
-  boardWidth = 500,
-  orientation = 'white',
-  highlightedSquares = [],
-  boardKey = 0 // Flash problem fix
+  onRightClick, // YENİ PROP
+  boardWidth = 500, 
+  orientation = "white",
+  customSquareStyles = {},
+  disabled = false,
+  ...props 
 }) => {
   const [moveFrom, setMoveFrom] = useState('');
   const [optionSquares, setOptionSquares] = useState({});
@@ -49,38 +51,52 @@ const PuzzleBoard = ({
       to: targetSquare,
       promotion: 'q'
     };
-    
-    return onMove(moveData);
+    const result = onMove(moveData); // onMove should return a boolean for react-chessboard
+    return result !== null && typeof result !== 'undefined' ? result : false; // Ensure a boolean is returned
   };
 
   // Custom square styles
-  const customSquareStyles = {
-    ...highlightedSquares.reduce((acc, square) => ({
-      ...acc,
-      [square]: { backgroundColor: 'rgba(255, 255, 0, 0.4)' }
-    }), {}),
-    ...(moveFrom && {
-      [moveFrom]: { backgroundColor: 'rgba(255, 255, 0, 0.6)' }
+  // The `highlightedSquares` prop from PuzzlePage is now directly passed as `customSquareStyles`
+  // So, we just need to combine it with the moveFrom and optionSquares logic.
+  const combinedSquareStyles = {
+    ...customSquareStyles, // Styles from PuzzlePage (hints)
+    ...(moveFrom && { // Style for the selected 'from' square
+      [moveFrom]: { backgroundColor: 'rgba(255, 255, 0, 0.6)' } 
     }),
-    ...optionSquares
+    ...optionSquares, // Styles for legal move options (if you implement this)
+  };
+
+  // YENİ: Right-click event handler
+  const handleRightClick = (square) => {
+    if (disabled || !onRightClick) return;
+    
+    // Prevent default context menu
+    event.preventDefault();
+    
+    onRightClick(square);
   };
 
   return (
-    <div className="puzzle-board-container">
+    <div 
+      className="puzzle-board-container"
+      onContextMenu={(e) => e.preventDefault()} // Prevent default right-click menu
+    >
       <Chessboard
-        key={boardKey} // Prevents flash on reset
         position={position}
         onPieceDrop={onDrop}
         onSquareClick={onSquareClick}
+        onSquareRightClick={handleRightClick} // YENİ: Right-click handler
         boardOrientation={orientation}
         boardWidth={boardWidth}
-        customSquareStyles={customSquareStyles}
+        customSquareStyles={combinedSquareStyles} // Use combined styles
         customBoardStyle={{
           borderRadius: '4px',
           boxShadow: '0 2px 10px rgba(0, 0, 0, 0.5)'
         }}
         arePiecesDraggable={true}
         areSquaresClickable={true}
+        isDraggablePiece={({ piece, sourceSquare }) => !disabled}
+        {...props}
       />
     </div>
   );
